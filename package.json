@@ -1,0 +1,60 @@
+{
+  "name": "alexopwriter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:logic": "vitest run --project logic",
+    "test:browser": "vitest run --project browser",
+    "test:e2e": "bddgen && playwright test --project chromium",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e",
+    "test:model": "playwright test --config playwright.model.config.ts",
+    "lint": "oxlint . --deny-warnings --report-unused-disable-directives && eslint \"src/**/*.vue\" --max-warnings 0",
+    "test:compat": "bddgen && playwright test"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.11.0",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/state": "6.7.1",
+    "@codemirror/view": "6.43.9",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@huggingface/transformers": "4.3.0",
+    "@lucide/vue": "1.41.0",
+    "@replit/codemirror-vim": "6.4.0",
+    "dexie": "4.4.6",
+    "onnxruntime-web": "1.31.0-dev.20260914-8d85527a0",
+    "vue": "3.5.42",
+    "zod": "4.5.2",
+    "@lezer/highlight": "1.2.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/browser-playwright": "5.0.0",
+    "axe-core": "4.13.0",
+    "playwright-bdd": "9.2.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vite-plugin-pwa": "1.3.0",
+    "vitest": "5.0.0",
+    "vitest-browser-vue": "3.1.0",
+    "vue-tsc": "^3.1.1",
+    "oxlint": "1.80.0",
+    "eslint": "10.9.1",
+    "eslint-plugin-vue": "10.10.0",
+    "typescript-eslint": "8.68.0",
+    "vue-eslint-parser": "10.4.1"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  },
+  "description": "A local-first Markdown writing app with Vim and optional on-device writing assistance."
+}

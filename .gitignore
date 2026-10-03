@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.features-gen/
+.vitest/
+test-results/
+playwright-report/
+verification-artifacts/
+.eslintcache
+*.log
+.DS_Store
