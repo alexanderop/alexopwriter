@@ -42,7 +42,21 @@ pnpm verify
 pnpm test:compat
 ```
 
-Node tests cover document workflows with controllable external boundaries and pure review rules. Browser tests exercise real CodeMirror, IndexedDB, accessibility, and file writes through real browser file handles in origin-private storage. Playwright journeys use the built app to verify recovery, import/export bytes, and offline writing in Chromium. `test:compat` runs the same journeys in Chromium and Firefox. CI runs both commands.
+Node tests cover document workflows with controllable external boundaries and pure review rules. Browser tests exercise real CodeMirror, IndexedDB, accessibility, and file writes through real browser file handles in origin-private storage. Playwright journeys use the built app to verify document recovery, independent undo histories, keyboard selection, writing corrections, exact file downloads, preferences, offline writing, and divergent edits in two tabs. `pnpm verify` runs those journeys in Chromium. `pnpm test:compat` runs them in Chromium and Firefox. CI runs both commands.
+
+For a focused end-to-end run, build first with the same base path as the test command:
+
+```sh
+pnpm build
+pnpm test:e2e
+pnpm test:compat
+```
+
+If you set `VITE_BASE_PATH`, use the same value for the build and both test commands. A stale build with a different base path can leave the preview unable to load its scripts.
+
+Gherkin scenarios in `tests/e2e` describe the behavior the dependency rewrite must preserve. Page objects own accessible locators, editor gestures, and waits for visible results. Scenario fixtures own downloaded-file evidence and additional tabs. Each scenario has an isolated browser context. Multi-tab recovery scenarios deliberately share one context to exercise the real browser store.
+
+Keep application and storage code real in these journeys. Do not import editor APIs, read database records, or seed framework state from the tests. Check exported bytes and filenames for exact Markdown and Unicode fidelity. Put rule combinations and malformed-data cases in the lower test layers. When the editor implementation changes, adapt its page-object interaction boundary while retaining the scenarios and their expected outcomes.
 
 Native operating-system permission dialogs and actual original-file overwrites require a supported-browser acceptance check. Origin-private file tests do not prove those dialogs. Real model inference is a separate opt-in check because it downloads model weights and depends on the device. After building, run `pnpm test:model`. It downloads approximately 525 MB and tests a real suggestion, undo, and generation after an offline reload. This test uses an isolated persistent browser profile, removed afterward, because the default incognito context could not cache the large model file on this host.
 
