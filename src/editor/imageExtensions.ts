@@ -1,11 +1,17 @@
-import { EditorState, Facet, StateEffect, StateField } from '@codemirror/state'
+import { EditorState, Facet, StateEffect, StateField, type StateEffectType } from '@codemirror/state'
 import { Decoration, EditorView, WidgetType } from '@codemirror/view'
 import { embeddedImages } from './images'
 
 export type PendingImagePaste = Readonly<{ id: symbol; from: number; to: number }>
 export const addImagePaste = StateEffect.define<PendingImagePaste>()
 export const removeImagePaste = StateEffect.define<symbol>()
-export const pendingImagePastes = StateField.define<ReadonlyMap<symbol, PendingImagePaste>>({
+export const pendingImagePastes = trackedRanges(addImagePaste, removeImagePaste)
+export const addImageTarget = StateEffect.define<PendingImagePaste>()
+export const removeImageTarget = StateEffect.define<symbol>()
+export const imageTargets = trackedRanges(addImageTarget, removeImageTarget)
+
+function trackedRanges(add: StateEffectType<PendingImagePaste>, remove: StateEffectType<symbol>) {
+  return StateField.define<ReadonlyMap<symbol, PendingImagePaste>>({
   create: () => new Map(),
   update(pending, transaction) {
     const next = new Map<symbol, PendingImagePaste>()
@@ -24,40 +30,14 @@ export const pendingImagePastes = StateField.define<ReadonlyMap<symbol, PendingI
       })
     }
     for (const effect of transaction.effects) {
-      if (effect.is(addImagePaste)) next.set(effect.value.id, effect.value)
-      if (effect.is(removeImagePaste)) next.delete(effect.value)
+      if (effect.is(add)) next.set(effect.value.id, effect.value)
+      if (effect.is(remove)) next.delete(effect.value)
     }
     return next
   },
 })
 
-export const addImageTarget = StateEffect.define<PendingImagePaste>()
-export const removeImageTarget = StateEffect.define<symbol>()
-export const imageTargets = StateField.define<ReadonlyMap<symbol, PendingImagePaste>>({
-  create: () => new Map(),
-  update(pending, transaction) {
-    const next = new Map<symbol, PendingImagePaste>()
-    for (const [id, target] of pending) {
-      let changed = false
-      transaction.changes.iterChangedRanges((from, to) => {
-        if (target.from === target.to && from < target.from && to > target.to) changed = true
-        if (target.from !== target.to && from < target.to && to > target.from)
-          changed = true
-        if (from === to && from > target.from && from < target.to) changed = true
-      })
-      if (!changed) next.set(id, {
-        id,
-        from: transaction.changes.mapPos(target.from, 1),
-        to: transaction.changes.mapPos(target.to, target.from === target.to ? 1 : -1),
-      })
-    }
-    for (const effect of transaction.effects) {
-      if (effect.is(addImageTarget)) next.set(effect.value.id, effect.value)
-      if (effect.is(removeImageTarget)) next.delete(effect.value)
-    }
-    return next
-  },
-})
+}
 
 export const imageEditAction = Facet.define<(position: number) => void>()
 

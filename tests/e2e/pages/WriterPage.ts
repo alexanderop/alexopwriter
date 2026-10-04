@@ -139,9 +139,10 @@ export class WriterPage {
     this.page.context().on('request', observe)
     try {
       await this.page.getByRole('button', { name: 'Local writing help', exact: true }).click()
-      await expect(this.page.getByRole('button', { name: 'Download & enable', exact: true })).toBeVisible()
+      await expect(this.page.getByRole('button', { name: 'Manage models in Settings', exact: true })).toBeVisible()
       await this.appendText(' Still writing.')
       await this.expectSaved()
+      await this.page.getByRole('button', { name: 'Manage models in Settings', exact: true }).click()
       await expect(this.page.getByRole('button', { name: 'Download & enable', exact: true })).toBeVisible()
       expect(requests).toEqual([])
     } finally {

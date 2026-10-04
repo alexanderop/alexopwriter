@@ -29,9 +29,12 @@ import { saveBeforeUpdate, type RegisterAppUpdate } from './appUpdate'
 import { embeddedImages, imageAwareWordCount, type ImageTarget } from './editor/images'
 import DocumentEditor from './components/DocumentEditor.vue'
 import type { SelectionTarget } from './components/DocumentEditor.vue'
+import ModelSettings from './components/ModelSettings.vue'
+import { createImageCaption, type ImageCaption } from './assistance/imageCaption'
+import { inspectModelFiles, type ModelFiles } from './assistance/modelAssets'
 import { createWorkspace } from './documents/workspace'
-import { checkWriting, createLocalAssistant, MODEL_INFO } from './assistance'
-const props = defineProps<{ registerUpdates?: RegisterAppUpdate }>()
+import { checkWriting, createLocalAssistant } from './assistance'
+const props = defineProps<{ registerUpdates?: RegisterAppUpdate; createCaption?: () => ImageCaption }>()
 const updateAvailable = ref(false)
 const updating = ref(false)
 const workspaceReady = ref(false)
@@ -40,9 +43,13 @@ let updateRequested = false
 let activateUpdate: (() => Promise<void>) | undefined
 const workspace = createWorkspace()
 const state = shallowRef(workspace.snapshot())
+const captions = (props.createCaption ?? createImageCaption)()
+const captionState = shallowRef(captions.snapshot())
+const writingFiles = ref<ModelFiles>('unknown')
 const assistant = createLocalAssistant()
 const assistantState = shallowRef(assistant.snapshot())
 const releases = [
+  captions.subscribe((snapshot) => { captionState.value = snapshot }),
   workspace.subscribe((snapshot) => {
     state.value = snapshot
   }),
@@ -73,22 +80,74 @@ watch([dark, vimEnabled], () => {
   }
 })
 const mode = ref('NORMAL')
-const panel = ref<'review' | 'assist' | 'image' | null>(null)
+const panel = ref<'review' | 'assist' | 'image' | 'settings' | null>(null)
 const imageTarget = shallowRef<ImageTarget | null>(null)
 const altDraft = ref('')
 const altInput = useTemplateRef<HTMLTextAreaElement>('altInput')
+let imageReturnFocus: HTMLElement | null = null
+const settingsButton = useTemplateRef<HTMLButtonElement>('settingsButton')
+const panelHost = useTemplateRef<HTMLElement>('panelHost')
+let captionEpoch = 0
+let altRevision = 0
+watch(altDraft, () => { altRevision++ }, { flush: 'sync' })
 function closeImage() {
+  captionEpoch++
+  if (captionState.value.phase === 'generating') captions.cancel()
   if (imageTarget.value) editor.value?.releaseImage(imageTarget.value)
   imageTarget.value = null
   if (panel.value === 'image') panel.value = null
-  editor.value?.focus()
+  if (imageReturnFocus?.isConnected) imageReturnFocus.focus()
+  else editor.value?.focus()
+  imageReturnFocus = null
 }
 function openImage(target: ImageTarget) {
-  if (imageTarget.value) editor.value?.releaseImage(imageTarget.value)
+  const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  if (imageTarget.value) closeImage()
+  imageReturnFocus = returnFocus
   imageTarget.value = target
   altDraft.value = target.alt
   panel.value = 'image'
+  void captions.refresh()
   void nextTick(() => altInput.value?.focus())
+}
+let inventoryRequest = 0
+async function refreshModels() {
+  const request = ++inventoryRequest
+  await Promise.all([captions.refresh(), inspectModelFiles('writing').then((files) => { if (request === inventoryRequest) writingFiles.value = files })])
+}
+function openSettings() {
+  if (imageTarget.value) closeImage()
+  panel.value = 'settings'
+  void nextTick(() => panelHost.value?.focus())
+  void refreshModels()
+}
+async function downloadCaption() {
+  try { await captions.download() } catch (error) { reportError(error instanceof Error ? error : new Error('Image model download failed.')) }
+}
+async function removeCaption() {
+  try { await captions.remove() } catch (error) { reportError(error instanceof Error ? error : new Error('Could not remove image model.')) }
+}
+async function generateAlt() {
+  const target = imageTarget.value
+  if (!target) return
+  const request = ++captionEpoch
+  const draftAtStart = altRevision
+  try {
+    const text = await captions.describe(target.url)
+    if (request !== captionEpoch || imageTarget.value !== target) return
+    if (draftAtStart !== altRevision) {
+      notice.value = 'Your alt text changed while generating. Kept your edit; generate again if needed.'
+      return
+    }
+    altDraft.value = text
+    notice.value = 'Description drafted. Check details, especially text and charts, then apply.'
+  } catch (error) {
+    if (request === captionEpoch) reportError(error instanceof Error ? error : new Error('Could not describe image.'))
+  }
+}
+function closePanel() {
+  if (imageTarget.value) closeImage()
+  else { const settings = panel.value === 'settings'; panel.value = null; if (settings) settingsButton.value?.focus(); else editor.value?.focus() }
 }
 function applyAlt() {
   if (!imageTarget.value) return
@@ -212,6 +271,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', visibilityChanged)
   window.removeEventListener('keydown', shortcut)
   releases.forEach((release) => release())
+  captions.dispose()
   assistant.dispose()
   void workspace.dispose().catch(reportError)
 })
@@ -291,6 +351,7 @@ function accept() {
 async function enable() {
   try {
     await assistant.enable()
+    await refreshModels()
   } catch (error) {
     notice.value =
       error instanceof Error ? error.message : 'The model could not be loaded.'
@@ -299,6 +360,7 @@ async function enable() {
 async function removeModel() {
   try {
     await assistant.remove()
+    await refreshModels()
   } catch (error) {
     notice.value =
       error instanceof Error ? error.message : 'The model could not be removed.'
@@ -369,6 +431,7 @@ async function removeModel() {
             <Feather :size="14" /><span class="help-label">Writing help</span>
           </button>
         </div>
+        <button ref="settingsButton" aria-label="Settings" :aria-expanded="panel === 'settings'" @click="openSettings">Settings</button>
         <span class="toolbar-divider" />
         <button
           class="icon-button"
@@ -470,30 +533,41 @@ async function removeModel() {
       </main>
       <aside
         v-if="panel"
+        ref="panelHost"
+        tabindex="-1"
         class="review-panel"
+        @keydown.esc.stop="closePanel"
         :aria-label="
-          panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Local writing help'
+          panel === 'settings' ? 'Settings' : panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Local writing help'
         "
       >
         <div class="panel-header">
           <h2>
-            {{ panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Writing help' }}
+            {{ panel === 'settings' ? 'Settings' : panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Writing help' }}
           </h2>
           <button
             class="icon-button"
             aria-label="Close panel"
-            @click="panel === 'image' ? closeImage() : panel = null"
+            @click="closePanel"
           >
             <X :size="17" />
           </button>
         </div>
-        <template v-if="panel === 'image' && imageTarget">
+        <ModelSettings v-if="panel === 'settings'" :caption="captionState" :writing="assistantState" :writing-files="writingFiles" @download-caption="downloadCaption" @cancel-caption="captions.cancel()" @remove-caption="removeCaption" @enable-writing="enable" @cancel-writing="assistant.cancel()" @remove-writing="removeModel" />
+        <template v-else-if="panel === 'image' && imageTarget">
           <section class="image-description" @keydown.esc.stop="closeImage">
             <img :src="imageTarget.url" :alt="imageTarget.alt" class="alt-preview" />
             <p class="panel-description">Describe what matters about this image in your document.</p>
             <label for="image-alt">Alt text</label>
             <textarea id="image-alt" ref="altInput" v-model="altDraft" rows="5" />
             <p class="panel-description">Leave empty for a decorative image.</p>
+            <template v-if="captionState.phase === 'generating'">
+              <p role="status">{{ captionState.message }}</p>
+              <button @click="captionEpoch++; captions.cancel()">Cancel generation</button>
+            </template>
+            <button v-else-if="captionState.files === 'available'" @click="generateAlt">Generate alt text</button>
+            <button v-else @click="openSettings">Set up local generation</button>
+            <p class="panel-description">Generated descriptions are in English. Check details, especially text and charts.</p>
             <div class="proposal-actions">
               <button class="primary-button" @click="applyAlt">Apply alt text</button>
               <button @click="closeImage">Cancel</button>
@@ -535,36 +609,8 @@ async function removeModel() {
             Optional assistance that runs on your device. Select a passage, then
             choose what you need.
           </p>
-          <div class="model-card">
-            <span class="eyebrow">LOCAL MODEL</span>
-            <h3>{{ MODEL_INFO.name }}</h3>
-            <p>
-              {{ MODEL_INFO.downloadLabel }} download. Text is processed in this
-              browser. English writing quality may vary.
-            </p>
-            <button
-              v-if="
-                assistantState.phase === 'disabled' ||
-                assistantState.phase === 'error'
-              "
-              class="primary-button"
-              @click="enable"
-            >
-              Download &amp; enable <Download :size="14" />
-            </button>
-            <template v-if="busy"
-              ><progress
-                :value="assistantState.progress"
-                max="100"
-                aria-label="Model progress"
-              />
-              <p role="status">{{ assistantState.message }}</p>
-              <button @click="assistant.cancel()">Cancel</button></template
-            >
-            <p v-if="assistantState.phase === 'ready'" class="ready-state">
-              <span class="local-dot" />Ready on this device
-            </p>
-          </div>
+          <p class="panel-description">{{ assistantState.message }}</p>
+          <button @click="openSettings">Manage models in Settings</button>
           <div v-if="assistantState.phase === 'ready'" class="assist-actions">
             <p>
               {{
@@ -589,13 +635,7 @@ async function removeModel() {
               ><button @click="proposal = null">Discard</button>
             </div>
           </div>
-          <button
-            v-if="!busy"
-            class="text-action remove-model"
-            @click="removeModel"
-          >
-            Remove downloaded model
-          </button>
+
         </template>
       </aside>
     </div>
