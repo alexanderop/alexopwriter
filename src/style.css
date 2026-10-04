@@ -605,3 +605,12 @@ progress {
 .app-notice button:hover {
   background: var(--muted);
 }
+
+.document-editor .embedded-image {
+  display: inline-block;
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  vertical-align: middle;
+  border-radius: 4px;
+}

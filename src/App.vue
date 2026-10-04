@@ -24,6 +24,7 @@ import {
   ArrowRight,
   FileText,
 } from '@lucide/vue'
+import { embeddedImages, imageAwareWordCount } from './editor/images'
 import DocumentEditor from './components/DocumentEditor.vue'
 import type { SelectionTarget } from './components/DocumentEditor.vue'
 import { createWorkspace } from './documents/workspace'
@@ -76,7 +77,7 @@ const active = computed(() =>
 )
 const issues = computed(() => checkWriting(active.value?.text ?? ''))
 const words = computed(
-  () => active.value?.text.trim().split(/\s+/u).filter(Boolean).length ?? 0,
+  () => imageAwareWordCount(active.value?.text ?? ''),
 )
 let requestEpoch = 0
 watch(
@@ -178,6 +179,10 @@ async function suggest(action: 'shorten' | 'clarify' | 'heading') {
   const target = editor.value?.captureSelection()
   if (!target) {
     notice.value = 'Select a passage in your document first.'
+    return
+  }
+  if (embeddedImages(target.text).length) {
+    notice.value = 'Select text without images to request writing help.'
     return
   }
   notice.value = ''
@@ -368,6 +373,7 @@ async function removeModel() {
             :revision="active.revision"
             :vim-enabled="vimEnabled"
             @change="changed"
+            @error="reportError"
             @mode="mode = $event"
             @selection="selected = $event"
           />
