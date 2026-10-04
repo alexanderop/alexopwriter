@@ -155,10 +155,10 @@ Feature: Writing in the browser
     Then "Vim mode" is enabled
     And my document contains "Persisted Vim."
 
-  Scenario: Dark mode can be enabled and disabled across reloads
+  Scenario: Dark mode is the default and can be disabled across reloads
     Given I have opened the browser writer
-    When I enable "Dark mode"
-    And the browser has saved my draft
+    Then "Dark mode" is enabled
+    When the browser has saved my draft
     And I reload the app
     Then "Dark mode" is enabled
     When I disable "Dark mode"

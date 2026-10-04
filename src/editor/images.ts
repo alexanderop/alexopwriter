@@ -1,7 +1,7 @@
 import { markdownLanguage } from '@codemirror/lang-markdown'
 
 const supportedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
-const embeddedImage = /^!\[([^\]]*)\]\((data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2})\)$/u
+const embeddedImage = /^!\[((?:\\.|[^\\\]])*)\]\((data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2})\)$/u
 
 export function clipboardImages(data: DataTransfer | null): File[] {
   return Array.from(data?.files ?? []).filter((file) => file.type.startsWith('image/'))
@@ -40,7 +40,7 @@ export function embeddedImages(text: string): EmbeddedImage[] {
       if (node.name !== 'Image') return
       const match = embeddedImage.exec(text.slice(node.from, node.to))
       if (match?.[1] !== undefined && match[2])
-        images.push({ from: node.from, to: node.to, alt: match[1], url: match[2] })
+        images.push({ from: node.from, to: node.to, alt: match[1].replace(/\\([\\[\]])/gu, '$1'), url: match[2] })
     },
   })
   return images
@@ -56,3 +56,10 @@ export function imageAwareWordCount(text: string): number {
   prose.push(text.slice(end))
   return prose.join(' ').trim().split(/\s+/u).filter(Boolean).length
 }
+
+export function imageMarkdown(alt: string, url: string): string {
+  const escaped = alt.replace(/\r\n?|\n/gu, ' ').replace(/[\\[\]]/gu, '\\$&')
+  return `![${escaped}](${url})`
+}
+
+export type ImageTarget = Readonly<{ id: symbol; documentId: string; original: string; url: string; alt: string }>

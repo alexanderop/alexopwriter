@@ -46,3 +46,26 @@ Then('the imported image has the original bytes', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Pasted image' })).toHaveAttribute('src', source)
   await expect.poll(() => page.getByRole('img', { name: 'Pasted image' }).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1)
 })
+
+When('I describe the image manually', async ({ page }) => {
+  const modelRequests: string[] = []
+  const observe = (request: import('@playwright/test').Request) => { if (request.url().includes('huggingface.co')) modelRequests.push(request.url()) }
+  page.on('request', observe)
+  try {
+    await page.getByRole('button', { name: 'Edit alt text', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Alt text', exact: true }).fill('A [red] pixel \\ sample')
+    await page.getByRole('button', { name: 'Apply alt text', exact: true }).click()
+    await expect(page.locator('.document-editor .embedded-image')).toHaveAttribute('alt', 'A [red] pixel \\ sample')
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Download image model', exact: true })).toBeVisible()
+    await expect(page.getByText('Draft saved in browser', { exact: true })).toBeVisible()
+    expect(modelRequests).toEqual([])
+  } finally { page.off('request', observe) }
+})
+Then('my image description is recovered and included in the download', async ({ page }) => {
+  await expect(page.locator('.document-editor .embedded-image')).toHaveAttribute('alt', 'A [red] pixel \\ sample')
+  const pending = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download copy' }).click()
+  const path = await (await pending).path()
+  expect(await readFile(path!, 'utf8')).toBe(`![A \\[red\\] pixel \\\\ sample](${source})`)
+})

@@ -58,7 +58,7 @@ Gherkin scenarios in `tests/e2e` describe the behavior the dependency rewrite mu
 
 Keep application and storage code real in these journeys. Do not import editor APIs, read database records, or seed framework state from the tests. Check exported bytes and filenames for exact Markdown and Unicode fidelity. Put rule combinations and malformed-data cases in the lower test layers. When the editor implementation changes, adapt its page-object interaction boundary while retaining the scenarios and their expected outcomes.
 
-Native operating-system permission dialogs and actual original-file overwrites require a supported-browser acceptance check. Origin-private file tests do not prove those dialogs. Real model inference is a separate opt-in check because it downloads model weights and depends on the device. After building, run `pnpm test:model`. It downloads approximately 525 MB and tests a real suggestion, undo, and generation after an offline reload. This test uses an isolated persistent browser profile, removed afterward, because the default incognito context could not cache the large model file on this host.
+Native operating-system permission dialogs and actual original-file overwrites require a supported-browser acceptance check. Origin-private file tests do not prove those dialogs. Real model inference is a separate opt-in check because it downloads model weights and depends on the device. After building, run `pnpm test:model`. It tests both writing help (about 525 MB) and image descriptions (up to 240 MB), including actual generation, undo, and generation after an offline reload. Run `pnpm test:model --grep "real local image"` for the caption check alone. The writing check uses an isolated persistent browser profile, removed afterward, because the default incognito context could not cache the large model file on this host.
 
 ## Architecture
 
@@ -73,5 +73,7 @@ See [the design decision](./DESIGN.md) for the chosen boundaries and alternative
 Review checks repeated words, simpler wording, and long sentences. It skips code and link destinations. These are deterministic writing checks, not a comprehensive spelling or grammar checker.
 
 Writing help optionally downloads a pinned Qwen 2.5 0.5B ONNX model through Transformers.js. Inference runs in a Web Worker using WASM. Select up to 2,000 characters and request shorter wording, clearer wording, or a heading. Review a proposal before accepting it; acceptance is undoable and rejects changed text. Model weights download from Hugging Face. The passage itself stays in the browser.
+
+Open Settings to download or manage models. Each embedded image has an Edit alt text action. Manual descriptions need no model; optional SmolVLM image descriptions run locally in English and produce an editable draft. Review details, especially text and charts, before applying. Applied alt text is undoable and stays in the Markdown file and browser recovery.
 
 Use Remove downloaded model to clear this model’s cached weights. Shared runtime files and browser drafts remain. Offline reuse requires a successful first download and retained browser caches.
