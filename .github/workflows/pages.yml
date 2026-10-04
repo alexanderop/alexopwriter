@@ -26,12 +26,13 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium firefox
       - run: pnpm verify
       - run: pnpm test:compat
+      - run: pnpm test:writer
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           path: dist
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         continue-on-error: true
         with:
           name: web-verification-evidence
@@ -40,6 +41,7 @@ jobs:
             test-results/
             playwright-report/
             .vitest/
+            verification-artifacts/
           if-no-files-found: ignore
           retention-days: 7
 

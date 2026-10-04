@@ -42,7 +42,19 @@ pnpm verify
 pnpm test:compat
 ```
 
-Node tests cover document workflows with controllable external boundaries and pure review rules. Browser tests exercise real CodeMirror, IndexedDB, accessibility, and file writes through real browser file handles in origin-private storage. Playwright journeys use the built app to verify document recovery, independent undo histories, keyboard selection, writing corrections, exact file downloads, preferences, offline writing, and divergent edits in two tabs. `pnpm verify` runs those journeys in Chromium. `pnpm test:compat` runs them in Chromium and Firefox. CI runs both commands.
+Node tests cover document workflows with controllable external boundaries and pure review rules. Browser tests exercise real CodeMirror, IndexedDB, accessibility, and file writes through real browser file handles in origin-private storage. Playwright journeys use the built app to verify document recovery, independent undo histories, keyboard selection, writing corrections, exact file downloads, preferences, offline writing, and divergent edits in two tabs. `pnpm verify` runs those journeys in Chromium. `pnpm test:compat` runs them in Chromium and Firefox. CI runs both commands and `pnpm test:writer`, which checks CLI evidence retention, interruption cleanup, and occupied-port handling.
+
+For repeatable feature verification with retained evidence, use the shared CLI:
+
+```sh
+pnpm writer doctor
+pnpm writer list
+pnpm writer verify recovery
+pnpm writer verify all --browser firefox
+pnpm --silent writer verify images --json
+```
+
+Each verification run builds and launches its own production preview on a free port, executes the same tagged Playwright scenarios and page objects as the E2E suite, and keeps traces, screenshots, downloaded files, and reports in `verification-artifacts/run-*/`. It stops its processes and removes temporary build files afterward. Use `--headed` to watch or prefix with `VITE_BASE_PATH=/alexopwriter/` to check the Pages path. Model inference stays opt-in. The project skill [$verify-alexopwriter](.agents/skills/verify-alexopwriter/SKILL.md) documents the workflow and its [feature map](.agents/skills/verify-alexopwriter/features/README.md).
 
 For a focused end-to-end run, build first with the same base path as the test command:
 
