@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { manualScheduler, memoryRecovery, testWorkspace } from './support/workspace'
-import { hasUnsecuredChanges } from '../src/documents'
+import { hasUnsecuredChanges } from '../src/features/documents'
 
 it('coalesces edits and recovers the latest text through the injected scheduler', async () => {
   const scheduler = manualScheduler()
@@ -17,7 +17,9 @@ it('coalesces edits and recovers the latest text through the injected scheduler'
     await expect.poll(async () => (await recovery.list())[0]?.text).toBe('latest')
     expect(workspace.snapshot().documents.some(hasUnsecuredChanges)).toBe(false)
     expect(scheduler.pending()).toBe(0)
-  } finally { await workspace.dispose() }
+  } finally {
+    await workspace.dispose()
+  }
 })
 
 it('flushes pending edits before closing and cancels scheduled work', async () => {

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { BaseInput } from '../shared/ui/input'
+import { BaseTextarea } from '../shared/ui/textarea'
+import { BaseButton } from '../shared/ui/button'
 import {
   computed,
   nextTick,
@@ -24,20 +27,23 @@ import {
   SlidersHorizontal,
   ArrowRight,
 } from '@lucide/vue'
-import { DocumentEditor, embeddedImages, imageAwareWordCount } from '../editor/ui'
-import { hasUnsecuredChanges } from '../documents'
-import { recoveryStatusText, diskStatusText } from '../documents/ui'
+import { DocumentEditor, embeddedImages, imageAwareWordCount } from '../features/editor/ui'
+import { hasUnsecuredChanges } from '../features/documents'
+import { recoveryStatusText, diskStatusText } from '../features/documents/ui'
 import type { WriterServices } from './bootstrap'
 import { createSuggestionSession } from './application/suggestionSession'
 import { suggestionNoticeText } from './suggestionNotice'
 import { saveBeforeUpdate, type RegisterAppUpdate } from './application/appUpdate'
-import type { ImageTarget } from '../editor/ui'
-import type { ModelFiles } from '../assistance'
-import { ModelSettings } from '../assistance/ui'
-import { checkWriting, type WritingAction } from '../assistance'
-import { AssistancePanel } from '../assistance/ui'
-import { DocumentList } from '../documents/ui'
-const props = defineProps<{ services: WriterServices; registerUpdates?: RegisterAppUpdate | undefined }>()
+import type { ImageTarget } from '../features/editor/ui'
+import type { ModelFiles } from '../features/assistance'
+import { ModelSettings } from '../features/assistance/ui'
+import { checkWriting, type WritingAction } from '../features/assistance'
+import { AssistancePanel } from '../features/assistance/ui'
+import { DocumentList } from '../features/documents/ui'
+const props = defineProps<{
+  services: WriterServices
+  registerUpdates?: RegisterAppUpdate | undefined
+}>()
 const { services } = props
 const { workspace, assistant, captions } = services
 const updateAvailable = ref(false)
@@ -52,7 +58,9 @@ const notice = ref('')
 const state = shallowRef(workspace.snapshot())
 const assistantState = shallowRef(assistant.snapshot())
 const releases = [
-  captions.subscribe(snapshot => { captionState.value = snapshot }),
+  captions.subscribe((snapshot) => {
+    captionState.value = snapshot
+  }),
   workspace.subscribe((snapshot) => {
     if (snapshot.activeId !== state.value.activeId) notice.value = ''
     state.value = snapshot
@@ -87,13 +95,19 @@ const mode = ref('NORMAL')
 const panel = ref<'review' | 'assist' | 'image' | 'settings' | null>(null)
 const imageTarget = shallowRef<ImageTarget | null>(null)
 const altDraft = ref('')
-const altInput = useTemplateRef<HTMLTextAreaElement>('altInput')
+const altInput = useTemplateRef<InstanceType<typeof BaseTextarea>>('altInput')
 let imageReturnFocus: HTMLElement | null = null
-const settingsButton = useTemplateRef<HTMLButtonElement>('settingsButton')
+const settingsButton = useTemplateRef<InstanceType<typeof BaseButton>>('settingsButton')
 const panelHost = useTemplateRef<HTMLElement>('panelHost')
 let captionEpoch = 0
 let altRevision = 0
-watch(altDraft, () => { altRevision++ }, { flush: 'sync' })
+watch(
+  altDraft,
+  () => {
+    altRevision++
+  },
+  { flush: 'sync' },
+)
 function closeImage() {
   captionEpoch++
   if (captionState.value.phase === 'generating') captions.cancel()
@@ -117,7 +131,12 @@ function openImage(target: ImageTarget) {
 let inventoryRequest = 0
 async function refreshModels() {
   const request = ++inventoryRequest
-  await Promise.all([captions.refresh(), services.inspectWritingFiles().then((files) => { if (request === inventoryRequest) writingFiles.value = files })])
+  await Promise.all([
+    captions.refresh(),
+    services.inspectWritingFiles().then((files) => {
+      if (request === inventoryRequest) writingFiles.value = files
+    }),
+  ])
 }
 function openSettings() {
   if (imageTarget.value) closeImage()
@@ -126,10 +145,18 @@ function openSettings() {
   void refreshModels()
 }
 async function downloadCaption() {
-  try { await captions.download() } catch (error) { reportError(error instanceof Error ? error : new Error('Image model download failed.')) }
+  try {
+    await captions.download()
+  } catch (error) {
+    reportError(error instanceof Error ? error : new Error('Image model download failed.'))
+  }
 }
 async function removeCaption() {
-  try { await captions.remove() } catch (error) { reportError(error instanceof Error ? error : new Error('Could not remove image model.')) }
+  try {
+    await captions.remove()
+  } catch (error) {
+    reportError(error instanceof Error ? error : new Error('Could not remove image model.'))
+  }
 }
 async function generateAlt() {
   const target = imageTarget.value
@@ -140,18 +167,29 @@ async function generateAlt() {
     const text = await captions.describe(target.url)
     if (request !== captionEpoch || imageTarget.value !== target) return
     if (draftAtStart !== altRevision) {
-      notice.value = 'Your alt text changed while generating. Kept your edit; generate again if needed.'
+      notice.value =
+        'Your alt text changed while generating. Kept your edit; generate again if needed.'
       return
     }
     altDraft.value = text
     notice.value = 'Description drafted. Check details, especially text and charts, then apply.'
   } catch (error) {
-    if (request === captionEpoch) reportError(error instanceof Error ? error : new Error('Could not describe image.'))
+    if (request === captionEpoch)
+      reportError(error instanceof Error ? error : new Error('Could not describe image.'))
   }
+}
+function cancelGeneration() {
+  captionEpoch++
+  captions.cancel()
 }
 function closePanel() {
   if (imageTarget.value) closeImage()
-  else { const settings = panel.value === 'settings'; panel.value = null; if (settings) settingsButton.value?.focus(); else editor.value?.focus() }
+  else {
+    const settings = panel.value === 'settings'
+    panel.value = null
+    if (settings) settingsButton.value?.focus()
+    else editor.value?.focus()
+  }
 }
 function applyAlt() {
   if (!imageTarget.value) return
@@ -164,15 +202,16 @@ function applyAlt() {
 }
 const selected = ref(false)
 const active = computed(() =>
-  state.value.documents.find(
-    (document) => document.id === state.value.activeId,
-  ),
+  state.value.documents.find((document) => document.id === state.value.activeId),
 )
 const issues = computed(() => checkWriting(active.value?.text ?? ''))
-const words = computed(
-  () => imageAwareWordCount(active.value?.text ?? ''),
+const words = computed(() => imageAwareWordCount(active.value?.text ?? ''))
+watch(
+  () => state.value.activeId,
+  () => {
+    if (imageTarget.value) closeImage()
+  },
 )
-watch(() => state.value.activeId, () => { if (imageTarget.value) closeImage() })
 const session = createSuggestionSession({
   workspace,
   assistant,
@@ -180,20 +219,21 @@ const session = createSuggestionSession({
     captureSelection: () => editor.value?.captureSelection() ?? null,
     applyReplacement: (target, text) => editor.value?.applyReplacement(target, text) ?? false,
   },
-  canSuggest: text => embeddedImages(text).length === 0,
+  canSuggest: (text) => embeddedImages(text).length === 0,
 })
 const suggestion = shallowRef(session.snapshot())
-releases.push(session.subscribe(snapshot => { suggestion.value = snapshot }))
+releases.push(
+  session.subscribe((snapshot) => {
+    suggestion.value = snapshot
+  }),
+)
 const displayNotice = computed(() => notice.value || suggestionNoticeText(suggestion.value.notice))
 function dismissNotice() {
   notice.value = ''
   session.dismissNotice()
 }
 function reportError(error: Error) {
-  notice.value =
-    error instanceof Error
-      ? error.message
-      : 'The operation could not be completed.'
+  notice.value = error instanceof Error ? error.message : 'The operation could not be completed.'
 }
 function beforeUnload(event: BeforeUnloadEvent) {
   const unsafe = state.value.documents.some(hasUnsecuredChanges)
@@ -203,8 +243,7 @@ function beforeUnload(event: BeforeUnloadEvent) {
   }
 }
 function visibilityChanged() {
-  if (document.visibilityState === 'hidden')
-    void workspace.flush().catch(reportError)
+  if (document.visibilityState === 'hidden') void workspace.flush().catch(reportError)
 }
 function shortcut(event: KeyboardEvent) {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
@@ -239,7 +278,9 @@ async function applyUpdate() {
 }
 onMounted(async () => {
   activateUpdate = props.registerUpdates?.({
-    onNeedRefresh() { updateAvailable.value = true },
+    onNeedRefresh() {
+      updateAvailable.value = true
+    },
     onNeedReload() {
       updateActivated = true
       updateAvailable.value = true
@@ -258,9 +299,7 @@ onMounted(async () => {
     if (!workspace.snapshot().documents.length) await workspace.create()
     workspaceReady.value = true
   } catch (error) {
-    reportError(
-      error instanceof Error ? error : new Error('Could not open workspace.'),
-    )
+    reportError(error instanceof Error ? error : new Error('Could not open workspace.'))
   }
 })
 onBeforeUnmount(() => {
@@ -285,7 +324,11 @@ function renamed(event: Event) {
 function imported(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
   const file = event.target.files?.[0]
-  if (file) void file.text().then(text => workspace.importDocument({ name: file.name, text })).catch(reportError)
+  if (file)
+    void file
+      .text()
+      .then((text) => workspace.importDocument({ name: file.name, text }))
+      .catch(reportError)
   event.target.value = ''
 }
 function toggleDocuments() {
@@ -319,8 +362,7 @@ async function enable() {
     await assistant.enable()
     await refreshModels()
   } catch (error) {
-    notice.value =
-      error instanceof Error ? error.message : 'The model could not be loaded.'
+    notice.value = error instanceof Error ? error.message : 'The model could not be loaded.'
   }
 }
 async function removeModel() {
@@ -328,8 +370,7 @@ async function removeModel() {
     await assistant.remove()
     await refreshModels()
   } catch (error) {
-    notice.value =
-      error instanceof Error ? error.message : 'The model could not be removed.'
+    notice.value = error instanceof Error ? error.message : 'The model could not be removed.'
   }
 }
 </script>
@@ -338,90 +379,85 @@ async function removeModel() {
   <div class="app-shell" :class="{ dark, focused: focusMode }">
     <header class="topbar">
       <div class="brand-group">
-        <button
-          class="icon-button"
+        <BaseButton
+          size="icon"
           aria-label="Toggle documents"
           :aria-expanded="sidebar && !focusMode"
           @click="toggleDocuments"
         >
           <PanelLeft :size="18" />
-        </button>
+        </BaseButton>
         <span class="brand">alexopwriter</span>
       </div>
-      <input
+      <BaseInput
+        variant="ghost"
         v-if="active"
         class="document-title"
         aria-label="Document name"
-        :value="active.name"
+        :model-value="active.name"
         @change="renamed"
       />
       <nav aria-label="Document actions" class="toolbar">
-        <button aria-label="New document" @click="workspace.create()">
+        <BaseButton aria-label="New document" @click="workspace.create()">
           <Plus :size="15" /><span>New</span>
-        </button>
-        <button aria-label="Open file" @click="workspace.open()">
+        </BaseButton>
+        <BaseButton aria-label="Open file" @click="workspace.open()">
           <FolderOpen :size="15" /><span>Open</span>
-        </button>
-        <button
+        </BaseButton>
+        <BaseButton
           :disabled="!active"
           aria-label="Save"
           @click="active && workspace.save(active.id)"
         >
           <Check :size="15" /><span>Save</span>
-        </button>
-        <button
-          class="icon-button"
-          aria-label="Download copy"
-          :disabled="!active"
-          @click="download"
-        >
+        </BaseButton>
+        <BaseButton size="icon" aria-label="Download copy" :disabled="!active" @click="download">
           <Download :size="16" />
-        </button>
+        </BaseButton>
         <span class="toolbar-divider" />
         <div class="page-tools">
-          <button
+          <BaseButton
             aria-label="Writing checks"
             :aria-expanded="panel === 'review'"
             @click="togglePanel('review')"
           >
-            <SlidersHorizontal :size="14" />Review<span
-              v-if="issues.length"
-              class="count"
-              >{{ issues.length }}</span
-            ></button
-          ><button
+            <SlidersHorizontal :size="14" />Review<span v-if="issues.length" class="count">{{
+              issues.length
+            }}</span></BaseButton
+          ><BaseButton
             aria-label="Local writing help"
             :aria-expanded="panel === 'assist'"
             @click="togglePanel('assist')"
           >
             <Feather :size="14" /><span class="help-label">Writing help</span>
-          </button>
+          </BaseButton>
         </div>
-        <button ref="settingsButton" aria-label="Settings" :aria-expanded="panel === 'settings'" @click="openSettings">Settings</button>
-        <span class="toolbar-divider" />
-        <button
-          class="icon-button"
-          aria-label="Dark mode"
-          :aria-pressed="dark"
-          @click="dark = !dark"
+        <BaseButton
+          ref="settingsButton"
+          aria-label="Settings"
+          :aria-expanded="panel === 'settings'"
+          @click="openSettings"
+          >Settings</BaseButton
         >
+        <span class="toolbar-divider" />
+        <BaseButton size="icon" aria-label="Dark mode" :aria-pressed="dark" @click="dark = !dark">
           <Sun v-if="dark" :size="17" /><Moon v-else :size="17" />
-        </button>
-        <button
-          class="icon-button"
+        </BaseButton>
+        <BaseButton
+          size="icon"
           aria-label="Focus mode"
           :aria-pressed="focusMode"
           @click="focusMode = !focusMode"
         >
           <Minimize v-if="focusMode" :size="17" /><Maximize v-else :size="17" />
-        </button>
+        </BaseButton>
       </nav>
     </header>
     <div v-if="updateAvailable" class="update-banner" role="status">
       <span>A new version is ready. Update reloads the app after saving your drafts.</span>
-      <button :disabled="updating || !workspaceReady" @click="applyUpdate">
+      <BaseButton :disabled="updating || !workspaceReady" @click="applyUpdate">
         {{ updating ? 'Saving drafts…' : 'Update app' }}
-      </button>
+      </BaseButton>
     </div>
     <input
       ref="importer"
@@ -435,8 +471,14 @@ async function removeModel() {
       {{ state.error }}
     </div>
     <div class="workspace">
-      <DocumentList v-if="sidebar && !focusMode" :documents="state.documents" :active-id="state.activeId"
-        @create="workspace.create()" @activate="activateDocument" @import="importer?.click()" />
+      <DocumentList
+        v-if="sidebar && !focusMode"
+        :documents="state.documents"
+        :active-id="state.activeId"
+        @create="workspace.create()"
+        @activate="activateDocument"
+        @import="importer?.click()"
+      />
       <main class="writing-area">
         <div v-if="active" class="page">
           <DocumentEditor
@@ -456,9 +498,9 @@ async function removeModel() {
           <Feather :size="32" />
           <h1>A little room to think.</h1>
           <p>Open a file or start with a blank page.</p>
-          <button @click="workspace.create()">
+          <BaseButton @click="workspace.create()">
             Start writing <ArrowRight :size="15" />
-          </button>
+          </BaseButton>
         </div>
       </main>
       <aside
@@ -468,70 +510,107 @@ async function removeModel() {
         class="review-panel"
         @keydown.esc.stop="closePanel"
         :aria-label="
-          panel === 'settings' ? 'Settings' : panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Local writing help'
+          panel === 'settings'
+            ? 'Settings'
+            : panel === 'image'
+              ? 'Image description'
+              : panel === 'review'
+                ? 'Writing review'
+                : 'Local writing help'
         "
       >
         <div class="panel-header">
           <h2>
-            {{ panel === 'settings' ? 'Settings' : panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Writing help' }}
+            {{
+              panel === 'settings'
+                ? 'Settings'
+                : panel === 'image'
+                  ? 'Image description'
+                  : panel === 'review'
+                    ? 'Writing review'
+                    : 'Writing help'
+            }}
           </h2>
-          <button
-            class="icon-button"
-            aria-label="Close panel"
-            @click="closePanel"
-          >
+          <BaseButton size="icon" aria-label="Close panel" @click="closePanel">
             <X :size="17" />
-          </button>
+          </BaseButton>
         </div>
-        <ModelSettings v-if="panel === 'settings'" :caption="captionState" :writing="assistantState" :writing-files="writingFiles" @download-caption="downloadCaption" @cancel-caption="captions.cancel()" @remove-caption="removeCaption" @enable-writing="enable" @cancel-writing="session.cancel()" @remove-writing="removeModel" />
+        <ModelSettings
+          v-if="panel === 'settings'"
+          :caption="captionState"
+          :writing="assistantState"
+          :writing-files="writingFiles"
+          @download-caption="downloadCaption"
+          @cancel-caption="captions.cancel()"
+          @remove-caption="removeCaption"
+          @enable-writing="enable"
+          @cancel-writing="session.cancel()"
+          @remove-writing="removeModel"
+        />
         <template v-else-if="panel === 'image' && imageTarget">
           <section class="image-description" @keydown.esc.stop="closeImage">
             <img :src="imageTarget.url" :alt="imageTarget.alt" class="alt-preview" />
-            <p class="panel-description">Describe what matters about this image in your document.</p>
+            <p class="panel-description">
+              Describe what matters about this image in your document.
+            </p>
             <label for="image-alt">Alt text</label>
-            <textarea id="image-alt" ref="altInput" v-model="altDraft" rows="5" />
+            <BaseTextarea id="image-alt" ref="altInput" v-model="altDraft" rows="5" />
             <p class="panel-description">Leave empty for a decorative image.</p>
             <template v-if="captionState.phase === 'generating'">
               <p role="status">{{ captionState.message }}</p>
-              <button @click="captionEpoch++; captions.cancel()">Cancel generation</button>
+              <BaseButton @click="cancelGeneration">Cancel generation</BaseButton>
             </template>
-            <button v-else-if="captionState.files === 'available'" @click="generateAlt">Generate alt text</button>
-            <button v-else @click="openSettings">Set up local generation</button>
-            <p class="panel-description">Generated descriptions are in English. Check details, especially text and charts.</p>
+            <BaseButton v-else-if="captionState.files === 'available'" @click="generateAlt"
+              >Generate alt text</BaseButton
+            >
+            <BaseButton v-else @click="openSettings">Set up local generation</BaseButton>
+            <p class="panel-description">
+              Generated descriptions are in English. Check details, especially text and charts.
+            </p>
             <div class="proposal-actions">
-              <button class="primary-button" @click="applyAlt">Apply alt text</button>
-              <button @click="closeImage">Cancel</button>
+              <BaseButton variant="primary" @click="applyAlt">Apply alt text</BaseButton>
+              <BaseButton @click="closeImage">Cancel</BaseButton>
             </div>
           </section>
         </template>
       </aside>
-      <AssistancePanel v-if="panel === 'review' || panel === 'assist'" :panel="panel" :issues="issues" :assistant-state="assistantState"
-        :selected="selected" :proposal="suggestion.proposal"
-        @close="closePanel" @settings="openSettings" @select-range="(from, to) => editor?.selectRange(from, to)"
+      <AssistancePanel
+        v-if="panel === 'review' || panel === 'assist'"
+        :panel="panel"
+        :issues="issues"
+        :assistant-state="assistantState"
+        :selected="selected"
+        :proposal="suggestion.proposal"
+        @close="closePanel"
+        @settings="openSettings"
+        @select-range="(from, to) => editor?.selectRange(from, to)"
         @apply-issue="applyIssue"
-        @accept="accept" @discard="session.discard()" @suggest="suggest" />
+        @accept="accept"
+        @discard="session.discard()"
+        @suggest="suggest"
+      />
     </div>
     <div v-if="displayNotice" class="app-notice" role="status">
       <span>{{ displayNotice }}</span
-      ><button
-        class="icon-button"
+      ><BaseButton
+        size="icon"
+        variant="inverse"
         aria-label="Dismiss notification"
         @click="dismissNotice"
       >
         <X :size="14" />
-      </button>
+      </BaseButton>
     </div>
     <footer class="statusbar">
       <div>
-        <button
+        <BaseButton
           aria-label="Vim mode"
           :aria-pressed="vimEnabled"
           class="mode-button"
           @click="vimEnabled = !vimEnabled"
         >
-          {{ mode }}</button
-        ><span>{{ words.toLocaleString() }} words</span
-        ><span class="status-separator">/</span
+          {{ mode }}</BaseButton
+        ><span>{{ words.toLocaleString() }} words</span><span class="status-separator">/</span
         ><span>{{ Math.max(1, Math.ceil(words / 200)) }} min read</span>
       </div>
       <div class="save-state" aria-live="polite">

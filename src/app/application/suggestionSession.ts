@@ -1,6 +1,6 @@
-import type { LocalAssistant, WritingAction } from '../../assistance'
-import type { EditorPort, SelectionTarget } from '../../editor'
-import type { Workspace } from '../../documents'
+import type { LocalAssistant, WritingAction } from '../../features/assistance'
+import type { EditorPort, SelectionTarget } from '../../features/editor'
+import type { Workspace } from '../../features/documents'
 
 export type SuggestionNotice =
   | { readonly kind: 'none' | 'select' | 'images' | 'changed' | 'applied' | 'stale' }
@@ -30,7 +30,7 @@ export function createSuggestionSession(dependencies: {
     epoch += 1
     publish({ proposal: null, notice: { kind: 'none' } })
   }
-  const unsubscribe = workspace.subscribe(snapshot => {
+  const unsubscribe = workspace.subscribe((snapshot) => {
     if (snapshot.activeId === activeId) return
     activeId = snapshot.activeId
     clear()
@@ -41,7 +41,9 @@ export function createSuggestionSession(dependencies: {
     subscribe(listener: (snapshot: SuggestionSnapshot) => void) {
       listeners.add(listener)
       listener(state)
-      return () => { listeners.delete(listener) }
+      return () => {
+        listeners.delete(listener)
+      }
     },
     async suggest(action: WritingAction) {
       if (disposed) return
@@ -61,30 +63,40 @@ export function createSuggestionSession(dependencies: {
         if (disposed || request !== epoch) return
         const snapshot = workspace.snapshot()
         if (snapshot.activeId !== target.documentId) return
-        const document = snapshot.documents.find(item => item.id === target.documentId)
+        const document = snapshot.documents.find((item) => item.id === target.documentId)
         if (document?.revision !== target.revision) {
           publish({ proposal: null, notice: { kind: 'changed' } })
           return
         }
         publish({ proposal: { target, text }, notice: { kind: 'none' } })
       } catch (error) {
-        if (!disposed && request === epoch) publish({ proposal: null, notice: {
-          kind: 'error', message: error instanceof Error ? error.message : 'The suggestion could not be completed.',
-        } })
+        if (!disposed && request === epoch)
+          publish({
+            proposal: null,
+            notice: {
+              kind: 'error',
+              message:
+                error instanceof Error ? error.message : 'The suggestion could not be completed.',
+            },
+          })
       }
     },
     accept() {
       if (disposed || !state.proposal) return
       const { target, text } = state.proposal
       const snapshot = workspace.snapshot()
-      const document = snapshot.documents.find(item => item.id === snapshot.activeId)
-      const applied = document?.id === target.documentId && document.revision === target.revision &&
+      const document = snapshot.documents.find((item) => item.id === snapshot.activeId)
+      const applied =
+        document?.id === target.documentId &&
+        document.revision === target.revision &&
         editor.applyReplacement(target, text)
       clear()
       publish({ proposal: null, notice: { kind: applied ? 'applied' : 'stale' } })
     },
     discard: clear,
-    dismissNotice() { publish({ ...state, notice: { kind: 'none' } }) },
+    dismissNotice() {
+      publish({ ...state, notice: { kind: 'none' } })
+    },
     cancel() {
       if (disposed) return
       clear()

@@ -60,37 +60,50 @@ When('I redo the edit', async ({ writing }) => {
 When('I apply the writing correction {string}', async ({ writing }, replacement: string) => {
   await writing.primary.correctWriting(replacement)
 })
-When('I import the Markdown document {string}:', async ({ writing }, name: string, text: string) => {
-  await writing.primary.importDocument({ name, text })
-})
-Then('the downloaded {string} exactly contains:', async ({ writing }, name: string, text: string) => {
-  const copy = writing.requireDownload()
-  expect(copy.name).toBe(name)
-  expect(copy.bytes).toEqual(Buffer.from(text, 'utf8'))
-})
+When(
+  'I import the Markdown document {string}:',
+  async ({ writing }, name: string, text: string) => {
+    await writing.primary.importDocument({ name, text })
+  },
+)
+Then(
+  'the downloaded {string} exactly contains:',
+  async ({ writing }, name: string, text: string) => {
+    const copy = writing.requireDownload()
+    expect(copy.name).toBe(name)
+    expect(copy.bytes).toEqual(Buffer.from(text, 'utf8'))
+  },
+)
 When('I reimport the downloaded copy', async ({ writing }) => {
   const copy = writing.requireDownload()
   await writing.primary.importDocument({ name: copy.name, text: copy.bytes.toString('utf8') })
 })
 When('I enable {string}', async ({ writing }, preference: string) => {
-  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode') throw new Error(`Unknown preference: ${preference}`)
+  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode')
+    throw new Error(`Unknown preference: ${preference}`)
   await writing.primary.setPreference(preference, true)
 })
 When('I disable {string}', async ({ writing }, preference: string) => {
-  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode') throw new Error(`Unknown preference: ${preference}`)
+  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode')
+    throw new Error(`Unknown preference: ${preference}`)
   await writing.primary.setPreference(preference, false)
 })
 Then('{string} is enabled', async ({ writing }, preference: string) => {
-  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode') throw new Error(`Unknown preference: ${preference}`)
+  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode')
+    throw new Error(`Unknown preference: ${preference}`)
   await writing.primary.expectPreference(preference, true)
 })
 Then('{string} is disabled', async ({ writing }, preference: string) => {
-  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode') throw new Error(`Unknown preference: ${preference}`)
+  if (preference !== 'Vim mode' && preference !== 'Dark mode' && preference !== 'Focus mode')
+    throw new Error(`Unknown preference: ${preference}`)
   await writing.primary.expectPreference(preference, false)
 })
-When('I insert {string} with Vim and leave insert mode with jj', async ({ writing }, text: string) => {
-  await writing.primary.vimInsert(text)
-})
+When(
+  'I insert {string} with Vim and leave insert mode with jj',
+  async ({ writing }, text: string) => {
+    await writing.primary.vimInsert(text)
+  },
+)
 When('I undo with Vim', async ({ writing }) => {
   await writing.primary.vimUndo()
 })
@@ -116,13 +129,19 @@ When('the other tab changes its copy to {string}', async ({ writing }, text: str
   await writing.second.replaceText(text)
   await writing.second.expectSaved()
 })
-Then('a fresh tab recovers both {string} and {string}', async ({ writing }, first: string, second: string) => {
-  const recovered = await writing.openAnotherTab()
-  await recovered.expectDocumentCopies('Shared.md', [first, second])
-})
-When('I replace the final {int} characters with {string} using the keyboard', async ({ writing }, count: number, replacement: string) => {
-  await writing.primary.replaceFinalCharacters(count, replacement)
-})
+Then(
+  'a fresh tab recovers both {string} and {string}',
+  async ({ writing }, first: string, second: string) => {
+    const recovered = await writing.openAnotherTab()
+    await recovered.expectDocumentCopies('Shared.md', [first, second])
+  },
+)
+When(
+  'I replace the final {int} characters with {string} using the keyboard',
+  async ({ writing }, count: number, replacement: string) => {
+    await writing.primary.replaceFinalCharacters(count, replacement)
+  },
+)
 Then('the word count is {int}', async ({ writing }, count: number) => {
   await writing.primary.expectWordCount(count)
 })
@@ -130,6 +149,9 @@ Then('the word count is {int}', async ({ writing }, count: number) => {
 When('I type a new paragraph {string}', async ({ writing }, text: string) => {
   await writing.primary.appendParagraph(text)
 })
-Then('my document is named {string} and contains:', async ({ writing }, name: string, text: string) => {
-  await writing.primary.expectDocument({ name, text })
-})
+Then(
+  'my document is named {string} and contains:',
+  async ({ writing }, name: string, text: string) => {
+    await writing.primary.expectDocument({ name, text })
+  },
+)

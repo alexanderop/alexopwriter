@@ -12,7 +12,10 @@ export interface DownloadedCopy {
 }
 
 export class WriterPage {
-  constructor(private readonly page: Page, private readonly testInfo: TestInfo) {}
+  constructor(
+    private readonly page: Page,
+    private readonly testInfo: TestInfo,
+  ) {}
 
   private get editor() {
     return this.page.getByRole('textbox', { name: 'Document editor', exact: true })
@@ -35,7 +38,10 @@ export class WriterPage {
   }
 
   async expectPreference(name: 'Vim mode' | 'Dark mode' | 'Focus mode', enabled: boolean) {
-    await expect(this.page.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', String(enabled))
+    await expect(this.page.getByRole('button', { name, exact: true })).toHaveAttribute(
+      'aria-pressed',
+      String(enabled),
+    )
   }
 
   async createDocument(text: string) {
@@ -51,8 +57,13 @@ export class WriterPage {
   }
 
   async selectDocument(name: string) {
-    await this.page.getByRole('complementary', { name: 'Documents', exact: true }).getByRole('button', { name, exact: true }).click()
-    await expect(this.page.getByRole('textbox', { name: 'Document name', exact: true })).toHaveValue(name)
+    await this.page
+      .getByRole('complementary', { name: 'Documents', exact: true })
+      .getByRole('button', { name, exact: true })
+      .click()
+    await expect(
+      this.page.getByRole('textbox', { name: 'Document name', exact: true }),
+    ).toHaveValue(name)
   }
 
   async replaceText(text: string) {
@@ -91,8 +102,10 @@ export class WriterPage {
 
   async correctWriting(replacement: string) {
     await this.page.getByRole('button', { name: 'Writing checks', exact: true }).click()
-    await this.page.getByRole('complementary', { name: 'Writing review', exact: true })
-      .getByRole('button', { name: `Use “${replacement}”`, exact: true }).click()
+    await this.page
+      .getByRole('complementary', { name: 'Writing review', exact: true })
+      .getByRole('button', { name: `Use “${replacement}”`, exact: true })
+      .click()
   }
 
   async toggleDocuments() {
@@ -100,7 +113,9 @@ export class WriterPage {
   }
 
   async expectDocumentsVisible(visible: boolean) {
-    await expect(this.page.getByRole('complementary', { name: 'Documents', exact: true })).toBeVisible({ visible })
+    await expect(
+      this.page.getByRole('complementary', { name: 'Documents', exact: true }),
+    ).toBeVisible({ visible })
   }
 
   async expectWordCount(count: number) {
@@ -112,7 +127,9 @@ export class WriterPage {
     await this.editor.press('i')
     await this.editor.pressSequentially(text)
     await this.editor.pressSequentially('jj')
-    await expect(this.page.getByRole('button', { name: 'Vim mode', exact: true })).toHaveText('NORMAL')
+    await expect(this.page.getByRole('button', { name: 'Vim mode', exact: true })).toHaveText(
+      'NORMAL',
+    )
   }
 
   async vimUndo() {
@@ -134,16 +151,23 @@ export class WriterPage {
   async inspectOptionalHelp() {
     const requests: string[] = []
     const observe = (request: Request) => {
-      if (/huggingface|\.onnx(?:$|\?)|tokenizer|safetensors/u.test(request.url())) requests.push(request.url())
+      if (/huggingface|\.onnx(?:$|\?)|tokenizer|safetensors/u.test(request.url()))
+        requests.push(request.url())
     }
     this.page.context().on('request', observe)
     try {
       await this.page.getByRole('button', { name: 'Local writing help', exact: true }).click()
-      await expect(this.page.getByRole('button', { name: 'Manage models in Settings', exact: true })).toBeVisible()
+      await expect(
+        this.page.getByRole('button', { name: 'Manage models in Settings', exact: true }),
+      ).toBeVisible()
       await this.appendText(' Still writing.')
       await this.expectSaved()
-      await this.page.getByRole('button', { name: 'Manage models in Settings', exact: true }).click()
-      await expect(this.page.getByRole('button', { name: 'Download & enable', exact: true })).toBeVisible()
+      await this.page
+        .getByRole('button', { name: 'Manage models in Settings', exact: true })
+        .click()
+      await expect(
+        this.page.getByRole('button', { name: 'Download & enable', exact: true }),
+      ).toBeVisible()
       expect(requests).toEqual([])
     } finally {
       this.page.context().off('request', observe)
@@ -151,21 +175,27 @@ export class WriterPage {
   }
 
   private async readText() {
-    return this.editor.evaluate(element => {
-      if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) return element.value
+    return this.editor.evaluate((element) => {
+      if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement)
+        return element.value
       if (element instanceof HTMLElement) {
         const visible = element.cloneNode(true)
         if (!(visible instanceof HTMLElement)) throw new Error('Cannot read editor content')
-        visible.querySelectorAll('[aria-hidden="true"]').forEach(node => node.remove())
+        visible.querySelectorAll('[aria-hidden="true"]').forEach((node) => node.remove())
         const blocks = Array.from(visible.children)
-        if (blocks.length && blocks.every(node => node.tagName === 'DIV' || node.tagName === 'P')) {
-          return blocks.map(block => {
-            if (block.childNodes.length === 1 && block.firstChild?.nodeName === 'BR') return ''
-            block.querySelectorAll('br').forEach(br => br.replaceWith('\n'))
-            return block.textContent ?? ''
-          }).join('\n')
+        if (
+          blocks.length &&
+          blocks.every((node) => node.tagName === 'DIV' || node.tagName === 'P')
+        ) {
+          return blocks
+            .map((block) => {
+              if (block.childNodes.length === 1 && block.firstChild?.nodeName === 'BR') return ''
+              block.querySelectorAll('br').forEach((br) => br.replaceWith('\n'))
+              return block.textContent ?? ''
+            })
+            .join('\n')
         }
-        visible.querySelectorAll('br').forEach(br => br.replaceWith('\n'))
+        visible.querySelectorAll('br').forEach((br) => br.replaceWith('\n'))
         return visible.textContent ?? ''
       }
       throw new Error('Document editor must expose native text')
@@ -177,7 +207,9 @@ export class WriterPage {
   }
 
   async expectDocument(draft: Draft) {
-    await expect(this.page.getByRole('textbox', { name: 'Document name', exact: true })).toHaveValue(draft.name)
+    await expect(
+      this.page.getByRole('textbox', { name: 'Document name', exact: true }),
+    ).toHaveValue(draft.name)
     await this.expectText(draft.text)
   }
 
@@ -192,9 +224,13 @@ export class WriterPage {
 
   async importFile(file: DownloadedCopy) {
     await this.page.getByLabel('Import document', { exact: true }).setInputFiles({
-      name: file.name, mimeType: 'text/markdown', buffer: file.bytes,
+      name: file.name,
+      mimeType: 'text/markdown',
+      buffer: file.bytes,
     })
-    await expect(this.page.getByRole('textbox', { name: 'Document name', exact: true })).toHaveValue(file.name)
+    await expect(
+      this.page.getByRole('textbox', { name: 'Document name', exact: true }),
+    ).toHaveValue(file.name)
   }
 
   async downloadCopy(): Promise<DownloadedCopy> {
@@ -212,7 +248,11 @@ export class WriterPage {
     await this.page.evaluate(async () => {
       await navigator.serviceWorker.ready
       if (navigator.serviceWorker.controller) return
-      await new Promise<void>(resolve => navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true }))
+      await new Promise<void>((resolve) =>
+        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+          once: true,
+        }),
+      )
     })
   }
 }

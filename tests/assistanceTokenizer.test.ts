@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   loadPinnedTokenizerFiles,
   type TokenizerFileOptions,
-} from '../src/assistance/adapters/tokenizerFiles.ts'
-import { MODEL_INFO } from '../src/assistance/adapters/protocol.ts'
+} from '../src/features/assistance/adapters/tokenizerFiles.ts'
+import { MODEL_INFO } from '../src/features/assistance/adapters/protocol.ts'
 
 function tokenizerCache() {
   const responses = new Map<string, Response>()

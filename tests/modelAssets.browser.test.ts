@@ -1,5 +1,9 @@
 import { expect, test } from 'vitest'
-import { inspectModelFiles, modelAssetUrls, removeModelFiles } from '../src/assistance/adapters/modelAssets'
+import {
+  inspectModelFiles,
+  modelAssetUrls,
+  removeModelFiles,
+} from '../src/features/assistance/adapters/modelAssets'
 test('actual browser cache inventory requires every pinned asset and removal preserves other models', async () => {
   const cacheName = `model-test-${crypto.randomUUID()}`
   const cache = await caches.open(cacheName)
@@ -19,5 +23,7 @@ test('actual browser cache inventory requires every pinned asset and removal pre
     expect(await inspectModelFiles('caption')).toBe('absent')
     expect(await cache.match(writingUrl)).toBeDefined()
     expect(await cache.match('https://example.com/runtime.wasm')).toBeDefined()
-  } finally { await caches.delete(cacheName) }
+  } finally {
+    await caches.delete(cacheName)
+  }
 })

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { deleteDatabase } from './helpers/indexedDb'
-import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { indexedDbRecovery } from '../src/features/documents/adapters/indexedDbRecovery'
 import { testWorkspace as createWorkspace } from './support/workspace'
 it('preserves independent tab branches in real IndexedDB and rejects older revision writes', async () => {
   const name = `alexopwriter-recovery-test-${crypto.randomUUID()}`
@@ -34,24 +34,14 @@ it('preserves independent tab branches in real IndexedDB and rejects older revis
       updatedAt: 12,
     })
     const records = await second.list()
-    expect(records.map((row) => row.text).sort()).toEqual([
-      'First tab',
-      'Second tab',
-    ])
+    expect(records.map((row) => row.text).sort()).toEqual(['First tab', 'Second tab'])
     const workspace = createWorkspace({ recovery: first, actor: 'reload' })
     await workspace.initialize()
     const restored = workspace.snapshot()
-    expect(restored.documents.map((doc) => doc.text).sort()).toEqual([
-      'First tab',
-      'Second tab',
-    ])
+    expect(restored.documents.map((doc) => doc.text).sort()).toEqual(['First tab', 'Second tab'])
     expect(restored.documents.every((doc) => !doc.hasDiskBinding)).toBe(true)
-    expect(
-      restored.documents.find((doc) => doc.id === restored.activeId)?.text,
-    ).toBe('Second tab')
-    expect(
-      restored.documents.some((doc) => doc.name.includes('recovered copy')),
-    ).toBe(true)
+    expect(restored.documents.find((doc) => doc.id === restored.activeId)?.text).toBe('Second tab')
+    expect(restored.documents.some((doc) => doc.name.includes('recovered copy'))).toBe(true)
     await workspace.dispose()
     expect(await second.list()).toHaveLength(2)
   } finally {
@@ -93,9 +83,7 @@ it('shows only the latest sequential recovery while retaining concurrent sibling
     second.edited(secondId, 'Sequential next version')
     await second.flush()
     await latest.initialize()
-    expect(latest.snapshot().documents.map((doc) => doc.text)).toEqual([
-      'Sequential next version',
-    ])
+    expect(latest.snapshot().documents.map((doc) => doc.text)).toEqual(['Sequential next version'])
     expect(await inspection.list()).toHaveLength(2)
     sibling.edited(siblingId, 'Concurrent sibling version')
     await sibling.flush()

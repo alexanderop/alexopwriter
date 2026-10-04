@@ -40,21 +40,14 @@ test('a downloaded local model proposes an undoable heading and reloads offline'
   await expect(editor).toBeVisible()
   const vim = page.getByRole('button', { name: 'Vim mode', exact: true })
   if ((await vim.getAttribute('aria-pressed')) === 'true') await vim.click()
-  const original =
-    'Walking in the forest helps me slow down and notice the birds.'
+  const original = 'Walking in the forest helps me slow down and notice the birds.'
   await editor.fill(original)
   await editor.press('ControlOrMeta+a')
-  await page
-    .getByRole('button', { name: 'Settings', exact: true })
-    .click()
-  await page
-    .getByRole('button', { name: /Download & enable|Enable writing model/ })
-    .click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await page.getByRole('button', { name: /Download & enable|Enable writing model/ }).click()
   await waitForModel(page, 540_000)
   await page.getByRole('button', { name: 'Local writing help', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Suggest a heading', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Suggest a heading', exact: true }).click()
   const proposal = page.locator('.proposal > p')
   await expect(proposal).toBeVisible({ timeout: 120_000 })
   const result = await proposal.innerText()
@@ -71,15 +64,15 @@ test('a downloaded local model proposes an undoable heading and reloads offline'
     path: testInfo.outputPath('local-model.png'),
     fullPage: true,
   })
-  await expect(
-    page.getByText('Draft saved in browser', { exact: true }),
-  ).toBeVisible()
+  await expect(page.getByText('Draft saved in browser', { exact: true })).toBeVisible()
   const cacheInventory = await page.evaluate(async () => ({
     storage: await navigator.storage.estimate(),
-    caches: await Promise.all((await caches.keys()).map(async (name) => ({
-      name,
-      urls: (await (await caches.open(name)).keys()).map((request) => request.url),
-    }))),
+    caches: await Promise.all(
+      (await caches.keys()).map(async (name) => ({
+        name,
+        urls: (await (await caches.open(name)).keys()).map((request) => request.url),
+      })),
+    ),
   }))
   await testInfo.attach('model-cache', {
     body: JSON.stringify(cacheInventory, null, 2),
@@ -88,19 +81,13 @@ test('a downloaded local model proposes an undoable heading and reloads offline'
   await context.setOffline(true)
   await page.reload()
   await expect(editor).toHaveText(original)
-  await page
-    .getByRole('button', { name: 'Settings', exact: true })
-    .click()
-  await page
-    .getByRole('button', { name: /Download & enable|Enable writing model/ })
-    .click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await page.getByRole('button', { name: /Download & enable|Enable writing model/ }).click()
   await waitForModel(page, 120_000)
   await page.getByRole('button', { name: 'Local writing help', exact: true }).click()
   await editor.click()
   await editor.press('ControlOrMeta+a')
-  await page
-    .getByRole('button', { name: 'Suggest a heading', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Suggest a heading', exact: true }).click()
   await expect(proposal).toBeVisible({ timeout: 120_000 })
   expect((await proposal.innerText()).trim().length).toBeGreaterThan(0)
   await expect(editor).toHaveText(original)

@@ -1,0 +1,33 @@
+:root,
+.app-shell,
+.ui-theme {
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --radius-control: 5px;
+  --error-bg: #f5e4db;
+  --error-ink: #803d28;
+  --shadow-panel: #0000000b;
+  --shadow-notice: #0002;
+  --accent-foreground: #fff;
+  --accent-hover: color-mix(in srgb, var(--accent) 90%, var(--ink));
+  --font-system: -apple-system, BlinkMacSystemFont, sans-serif;
+  --paper: #fbfaf8;
+  --ink: #1a1a1a;
+  --dim: #b0a99f;
+  --muted: #6b655d;
+  --accent: #3a6ea5;
+  --selection: rgb(58 110 165 / 20%);
+  --panel: color-mix(in srgb, var(--ink) 4%, var(--paper));
+  --line: color-mix(in srgb, var(--ink) 12%, transparent);
+  --hover: color-mix(in srgb, var(--ink) 7%, transparent);
+  --soft: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.dark {
+  --paper: #17191c;
+  --ink: #c8c5be;
+  --dim: #565a60;
+  --muted: #8b867d;
+  --accent: #7aa8dd;
+  --selection: rgb(122 168 221 / 20%);
+  --accent-foreground: #17191c;
+  color-scheme: dark;
+}

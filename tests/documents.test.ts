@@ -1,8 +1,8 @@
 import { memoryRecovery } from './support/workspace'
 import { describe, expect, it } from 'vitest'
 import { testWorkspace as createWorkspace } from './support/workspace'
-import type { DiskBinding, FileAccess } from '../src/documents'
-import type { RecoveryRecord, RecoveryStore } from '../src/documents'
+import type { DiskBinding, FileAccess } from '../src/features/documents'
+import type { RecoveryRecord, RecoveryStore } from '../src/features/documents'
 function deferred<T>() {
   let resolve: (value: T) => void = () => {
     throw new Error('Not initialized')
@@ -49,14 +49,10 @@ describe('document persistence workflows', () => {
       await workspace.open()
       const id = activeId(workspace)
       workspace.download(id)
-      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
-        'saved',
-      )
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('saved')
       workspace.edited(id, 'edited copy')
       workspace.download(id)
-      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
-        'dirty',
-      )
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('dirty')
       expect(workspace.snapshot().documents[0]?.text).toBe('edited copy')
     } finally {
       await workspace.dispose()
@@ -91,14 +87,10 @@ describe('document persistence workflows', () => {
       release.resolve()
       await saving
       expect(bytes).toBe('first edit')
-      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
-        'dirty',
-      )
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('dirty')
       await workspace.save(id)
       expect(bytes).toBe('newer edit')
-      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
-        'saved',
-      )
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('saved')
     } finally {
       release.resolve()
       await workspace.dispose()
@@ -159,9 +151,9 @@ describe('document persistence workflows', () => {
       await saving
       expect(bytes).toBe('first document')
       expect(workspace.snapshot().activeId).toBe(second)
-      expect(
-        workspace.snapshot().documents.find((doc) => doc.id === second)?.text,
-      ).toBe('second document')
+      expect(workspace.snapshot().documents.find((doc) => doc.id === second)?.text).toBe(
+        'second document',
+      )
     } finally {
       release.resolve()
       await workspace.dispose()
@@ -184,9 +176,7 @@ describe('document persistence workflows', () => {
       await workspace.save(activeId(workspace))
       expect(bytes).toBe('external edits')
       expect(workspace.snapshot().documents[0]?.text).toBe('local edits')
-      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain(
-        'conflict',
-      )
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain('conflict')
     } finally {
       await workspace.dispose()
     }
@@ -218,10 +208,9 @@ describe('document persistence workflows', () => {
       ])
       await initialization
       expect(workspace.snapshot().activeId).toBe('new-document')
-      expect(
-        workspace.snapshot().documents.find((doc) => doc.id === 'new-document')
-          ?.text,
-      ).toBe('already typing')
+      expect(workspace.snapshot().documents.find((doc) => doc.id === 'new-document')?.text).toBe(
+        'already typing',
+      )
       expect(workspace.snapshot().documents).toHaveLength(2)
     } finally {
       await workspace.dispose()

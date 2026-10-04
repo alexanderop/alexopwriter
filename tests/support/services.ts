@@ -1,5 +1,5 @@
 import type { WriterServices } from '../../src/app/bootstrap'
-import { createImageCaption } from '../../src/assistance/adapters/imageCaption'
+import { createImageCaption } from '../../src/features/assistance/adapters/imageCaption'
 import { testWorkspace } from './workspace'
 import { controlledAssistant } from './controlledAssistant'
 export function createTestServices(overrides: Partial<WriterServices> = {}): WriterServices {

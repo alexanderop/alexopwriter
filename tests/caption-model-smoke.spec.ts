@@ -1,8 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { imageMarkdown } from '../src/editor/images'
+import { imageMarkdown } from '../src/features/editor/images'
 
-test('real local image descriptions apply, undo, persist and generate again offline', async ({ page, context }, testInfo) => {
+test('real local image descriptions apply, undo, persist and generate again offline', async ({
+  page,
+  context,
+}, testInfo) => {
   test.setTimeout(900_000)
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   const requests: { url: string; method: string }[] = []
@@ -13,18 +16,31 @@ test('real local image descriptions apply, undo, persist and generate again offl
   const editor = page.getByRole('textbox', { name: 'Document editor' })
   await expect(editor).toBeVisible()
   const vim = page.getByRole('button', { name: 'Vim mode', exact: true })
-  if (await vim.getAttribute('aria-pressed') === 'true') await vim.click()
+  if ((await vim.getAttribute('aria-pressed')) === 'true') await vim.click()
   await page.evaluate(async () => {
     const canvas = document.createElement('canvas')
-    canvas.width = 600; canvas.height = 320
+    canvas.width = 600
+    canvas.height = 320
     const paint = canvas.getContext('2d')!
-    paint.fillStyle = '#b8dce8'; paint.fillRect(0, 0, 600, 320)
-    paint.fillStyle = '#526646'; paint.beginPath(); paint.moveTo(0, 250); paint.lineTo(190, 40); paint.lineTo(390, 250); paint.lineTo(480, 140); paint.lineTo(600, 250); paint.fill()
-    paint.fillStyle = '#6798b0'; paint.fillRect(0, 250, 600, 70)
-    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((value) => resolve(value!), 'image/png'))
+    paint.fillStyle = '#b8dce8'
+    paint.fillRect(0, 0, 600, 320)
+    paint.fillStyle = '#526646'
+    paint.beginPath()
+    paint.moveTo(0, 250)
+    paint.lineTo(190, 40)
+    paint.lineTo(390, 250)
+    paint.lineTo(480, 140)
+    paint.lineTo(600, 250)
+    paint.fill()
+    paint.fillStyle = '#6798b0'
+    paint.fillRect(0, 250, 600, 70)
+    const blob = await new Promise<Blob>((resolve) =>
+      canvas.toBlob((value) => resolve(value!), 'image/png'),
+    )
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
   })
-  await editor.focus(); await editor.press('ControlOrMeta+v')
+  await editor.focus()
+  await editor.press('ControlOrMeta+v')
   const image = page.locator('.document-editor .embedded-image')
   await expect(image).toBeVisible()
   const source = await image.getAttribute('src')
@@ -34,7 +50,9 @@ test('real local image descriptions apply, undo, persist and generate again offl
   await expect(card.getByText('Not downloaded', { exact: true })).toBeVisible()
   expect(requests.filter((request) => request.url.includes('huggingface.co'))).toEqual([])
   await page.getByRole('button', { name: 'Download image model', exact: true }).click()
-  await expect(card.getByText('Downloaded in this browser', { exact: true })).toBeVisible({ timeout: 540_000 })
+  await expect(card.getByText('Downloaded in this browser', { exact: true })).toBeVisible({
+    timeout: 540_000,
+  })
   await page.getByRole('button', { name: 'Close panel', exact: true }).click()
   await page.getByRole('button', { name: 'Edit alt text', exact: true }).click()
   await page.getByRole('button', { name: 'Generate alt text', exact: true }).click()
@@ -65,7 +83,9 @@ test('real local image descriptions apply, undo, persist and generate again offl
   await page.getByRole('button', { name: 'Generate alt text', exact: true }).click()
   await expect(field).not.toHaveValue(edited, { timeout: 120_000 })
   expect((await field.inputValue()).trim().length).toBeGreaterThan(0)
-  expect(requests.slice(offlineStart).filter((request) => request.url.includes('huggingface.co'))).toEqual([])
+  expect(
+    requests.slice(offlineStart).filter((request) => request.url.includes('huggingface.co')),
+  ).toEqual([])
   expect(requests.filter((request) => request.method === 'POST')).toEqual([])
   expect(errors).toEqual([])
   await testInfo.attach('caption', { body: generated, contentType: 'text/plain' })

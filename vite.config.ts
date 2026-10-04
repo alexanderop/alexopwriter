@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { join } from 'node:path'
@@ -8,6 +9,7 @@ const base = process.env['VITE_BASE_PATH'] ?? '/'
 export default defineConfig({
   base,
   plugins: [
+    tailwindcss(),
     vue(),
     VitePWA({
       registerType: 'prompt',
@@ -55,6 +57,8 @@ export default defineConfig({
   preview: { port: 5186, strictPort: true },
   build: {
     target: 'es2022',
-    ...(process.env['WRITER_RUN_DIR'] ? { outDir: join(process.env['WRITER_RUN_DIR'], 'build') } : {}),
+    ...(process.env['WRITER_RUN_DIR']
+      ? { outDir: join(process.env['WRITER_RUN_DIR'], 'build') }
+      : {}),
   },
 })
