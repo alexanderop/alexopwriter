@@ -14,13 +14,11 @@ Given('I open an empty image writing workspace', async ({ page }) => {
 When('I paste a copied image into my document', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Document editor' }).focus()
   await page.getByRole('textbox', { name: 'Document editor' }).evaluate((editor, bytes) => {
-    const data = new DataTransfer()
-    data.items.add(new File([Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0))], 'copied.png', { type: 'image/png' }))
-    const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })
-    const image = event.clipboardData?.files[0]
-    if (event.clipboardData?.files.length !== 1 || image?.type !== 'image/png' || image.size === 0)
-      throw new Error('Synthetic paste must carry one nonempty PNG file in clipboardData')
+    const image = new File([Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0))], 'copied.png', { type: 'image/png' })
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', { value: { files: [image] } })
     editor.dispatchEvent(event)
+    if (!event.defaultPrevented) throw new Error('The editor did not accept the image paste')
   }, png)
 })
 Then('the pasted image is displayed and saved in browser recovery', async ({ page }) => {
