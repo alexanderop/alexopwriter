@@ -8,3 +8,5 @@ verification-artifacts/
 .eslintcache
 *.log
 .DS_Store
+
+.playwright-cli/

@@ -186,10 +186,15 @@ export class WriterPage {
   }
 
   async importDocument(draft: Draft) {
+    await this.importFile({ name: draft.name, bytes: Buffer.from(draft.text) })
+    await this.expectText(draft.text)
+  }
+
+  async importFile(file: DownloadedCopy) {
     await this.page.getByLabel('Import document', { exact: true }).setInputFiles({
-      name: draft.name, mimeType: 'text/markdown', buffer: Buffer.from(draft.text),
+      name: file.name, mimeType: 'text/markdown', buffer: file.bytes,
     })
-    await this.expectDocument(draft)
+    await expect(this.page.getByRole('textbox', { name: 'Document name', exact: true })).toHaveValue(file.name)
   }
 
   async downloadCopy(): Promise<DownloadedCopy> {

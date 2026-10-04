@@ -1,3 +1,4 @@
+@images
 Feature: Portable pasted images
   Scenario: An image survives browser recovery and a downloaded document
     Given I open an empty image writing workspace

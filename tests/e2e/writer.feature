@@ -1,4 +1,5 @@
 Feature: Writing in the browser
+  @recovery
   Scenario: A draft survives reloading the app
     Given I have opened the browser writer
     When I create a document containing "A quiet place to think. 🌿"
@@ -6,6 +7,7 @@ Feature: Writing in the browser
     And I reload the app
     Then my document contains "A quiet place to think. 🌿"
 
+  @import-export
   Scenario: An imported file can be edited and downloaded
     Given I have opened the browser writer
     When I import a file containing "Original paragraph."
@@ -13,6 +15,7 @@ Feature: Writing in the browser
     And I download a copy
     Then the downloaded file contains "A revised paragraph."
 
+  @offline
   Scenario: Writing continues without a network connection
     Given I have opened the browser writer
     And the app is available offline
@@ -23,6 +26,7 @@ Feature: Writing in the browser
     And I reload the app
     Then my document contains "Written while offline."
 
+  @recovery
   Scenario: Two named documents retain independent edits through repeated reloads
     Given I have opened the browser writer
     When I import "First.md" containing "First seed."
@@ -42,6 +46,7 @@ Feature: Writing in the browser
     When I select document "Second.md"
     Then my document contains "Second seed. Second edit."
 
+  @editing
   Scenario: An imported baseline supports undo and redo
     Given I have opened the browser writer
     When I import "History.md" containing "Original."
@@ -52,6 +57,7 @@ Feature: Writing in the browser
     When I redo the edit
     Then my document contains "Original. An addition."
 
+  @editing
   Scenario: Each document keeps its own undo history while switching
     Given I have opened the browser writer
     When I import "First.md" containing "First."
@@ -72,6 +78,7 @@ Feature: Writing in the browser
     And I redo the edit
     Then my document contains "Second. Beta."
 
+  @editing
   Scenario: A review correction participates in history and survives reload
     Given I have opened the browser writer
     When I import "Review.md" containing "We utilize clear words."
@@ -85,6 +92,7 @@ Feature: Writing in the browser
     And I reload the app
     Then my document contains "We use clear words."
 
+  @import-export
   Scenario: Unicode Markdown survives a renamed download and reimport exactly
     Given I have opened the browser writer
     When I import the Markdown document "Source.md":
@@ -122,6 +130,7 @@ Feature: Writing in the browser
 
       """
 
+  @import-export
   Scenario: The same file can be imported again after editing
     Given I have opened the browser writer
     When I import "Repeated.md" containing "File baseline."
@@ -131,6 +140,7 @@ Feature: Writing in the browser
     When I download a copy
     Then the downloaded file contains "File baseline."
 
+  @recovery
   Scenario: Clearing a draft persists the empty document
     Given I have opened the browser writer
     When I import "Empty.md" containing "Remove all of this."
@@ -141,6 +151,7 @@ Feature: Writing in the browser
     When I download a copy
     Then the downloaded file contains ""
 
+  @editing
   Scenario: Vim insertion and undo work with a persisted preference
     Given I have opened the browser writer
     When I create a document containing ""
@@ -155,6 +166,7 @@ Feature: Writing in the browser
     Then "Vim mode" is enabled
     And my document contains "Persisted Vim."
 
+  @editing
   Scenario: Dark mode is the default and can be disabled across reloads
     Given I have opened the browser writer
     Then "Dark mode" is enabled
@@ -165,6 +177,7 @@ Feature: Writing in the browser
     And I reload the app
     Then "Dark mode" is disabled
 
+  @editing
   Scenario: Focus mode and sidebar toggles preserve editable content
     Given I have opened the browser writer
     When I import "Focus.md" containing "Stay focused."
@@ -181,12 +194,14 @@ Feature: Writing in the browser
     Then the documents sidebar is visible
     And my document contains "Stay focused. More words. Still here."
 
+  @editing
   Scenario: Opening optional help does not implicitly download a model
     Given I have opened the browser writer
     When I import "Help.md" containing "Local text."
     And I inspect optional writing help without enabling it
     Then my document contains "Local text. Still writing."
 
+  @recovery
   Scenario: Divergent edits from two tabs are both recovered
     Given I have opened the browser writer
     When I import "Shared.md" containing "Shared seed."
@@ -197,6 +212,7 @@ Feature: Writing in the browser
     And the other tab changes its copy to "Second tab branch."
     Then a fresh tab recovers both "First tab branch." and "Second tab branch."
 
+  @editing
   Scenario: Keyboard selection replaces only selected text and updates the word count
     Given I have opened the browser writer
     When I import "Selection.md" containing "Keep the ending"
@@ -209,6 +225,7 @@ Feature: Writing in the browser
     And the word count is 3
 
 
+  @recovery
   Scenario: Multiline keyboard edits and a renamed document survive recovery exactly
     Given I have opened the browser writer
     When I import the Markdown document "Before.md":

@@ -15,7 +15,10 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e",
     "test:model": "playwright test --config playwright.model.config.ts",
     "lint": "oxlint . --deny-warnings --report-unused-disable-directives && eslint \"src/**/*.vue\" --max-warnings 0",
-    "test:compat": "bddgen && playwright test"
+    "test:compat": "bddgen && playwright test",
+    "writer": "node --experimental-strip-types scripts/writer-cli.ts",
+    "test:writer": "node --experimental-strip-types --test tests/writer-cli.integration.ts",
+    "browser": "playwright cli"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.0",

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { join } from 'node:path'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const base = process.env['VITE_BASE_PATH'] ?? '/'
@@ -52,5 +53,8 @@ export default defineConfig({
   worker: { format: 'es' },
   server: { port: 5186, strictPort: true },
   preview: { port: 5186, strictPort: true },
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    ...(process.env['WRITER_RUN_DIR'] ? { outDir: join(process.env['WRITER_RUN_DIR'], 'build') } : {}),
+  },
 })
