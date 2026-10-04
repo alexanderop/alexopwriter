@@ -4,6 +4,7 @@ import { access, mkdir, mkdtemp, readFile, writeFile, rm, readdir } from 'node:f
 import { createServer } from 'node:net'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { stripVTControlCharacters } from 'node:util'
 import { features, isVerified, normalizeBasePath, parseCommand, readCounts, type Browser, type Command } from './writer-options.ts'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -101,7 +102,7 @@ async function verify(command: Extract<Command, { kind: 'verify' }>) {
       child.once('error', error => { record(Buffer.from(String(error))); resolveExit(1) })
       child.once('close', code => { children.delete(child); resolveExit(code) })
     })
-    return { child, exited, output: () => output }
+    return { child, exited, output: () => stripVTControlCharacters(output) }
   }
   const run = async (args: string[], env: NodeJS.ProcessEnv) => {
     const commandProcess = startCommand(args, env)

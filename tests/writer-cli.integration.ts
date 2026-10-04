@@ -7,7 +7,7 @@ import { test } from 'node:test'
 
 async function invoke(args: string[], interruptWhen?: string) {
   const child = spawn(process.execPath, ['--experimental-strip-types', 'scripts/writer-cli.ts', ...args, '--json'], {
-    env: { ...process.env, VITE_BASE_PATH: '/alexopwriter/' }, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, VITE_BASE_PATH: '/alexopwriter/', FORCE_COLOR: '1' }, stdio: ['ignore', 'pipe', 'pipe'],
   })
   let stdout = ''
   let stderr = ''
