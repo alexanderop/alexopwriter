@@ -70,29 +70,15 @@ async function inputFile(): Promise<OpenedFile | null> {
     input.click()
   })
 }
-function hasOpenPicker(
-  value: Window,
-): value is Window & {
-  showOpenFilePicker(options: {
-    multiple: boolean
-  }): Promise<NativeFileHandle[]>
+function hasOpenPicker(value: Window): value is Window & {
+  showOpenFilePicker(options: { multiple: boolean }): Promise<NativeFileHandle[]>
 } {
-  return (
-    'showOpenFilePicker' in value &&
-    typeof value.showOpenFilePicker === 'function'
-  )
+  return 'showOpenFilePicker' in value && typeof value.showOpenFilePicker === 'function'
 }
-function hasSavePicker(
-  value: Window,
-): value is Window & {
-  showSaveFilePicker(options: {
-    suggestedName: string
-  }): Promise<NativeFileHandle>
+function hasSavePicker(value: Window): value is Window & {
+  showSaveFilePicker(options: { suggestedName: string }): Promise<NativeFileHandle>
 } {
-  return (
-    'showSaveFilePicker' in value &&
-    typeof value.showSaveFilePicker === 'function'
-  )
+  return 'showSaveFilePicker' in value && typeof value.showSaveFilePicker === 'function'
 }
 export type BrowserFilePickers = {
   open(): Promise<readonly NativeFileHandle[] | null>
@@ -100,19 +86,13 @@ export type BrowserFilePickers = {
 }
 const nativePickers: BrowserFilePickers = {
   async open() {
-    return hasOpenPicker(window)
-      ? window.showOpenFilePicker({ multiple: false })
-      : null
+    return hasOpenPicker(window) ? window.showOpenFilePicker({ multiple: false }) : null
   },
   async save(name) {
-    return hasSavePicker(window)
-      ? window.showSaveFilePicker({ suggestedName: name })
-      : null
+    return hasSavePicker(window) ? window.showSaveFilePicker({ suggestedName: name }) : null
   },
 }
-export function browserFiles(
-  pickers: BrowserFilePickers = nativePickers,
-): FileAccess {
+export function browserFiles(pickers: BrowserFilePickers = nativePickers): FileAccess {
   return {
     async open() {
       try {
@@ -121,8 +101,7 @@ export function browserFiles(
         if (!Array.isArray(result))
           throw new Error('The browser returned an invalid file selection.')
         const handle: unknown = result[0]
-        if (!isHandle(handle))
-          throw new Error('The selected file cannot be edited.')
+        if (!isHandle(handle)) throw new Error('The selected file cannot be edited.')
         return {
           name: handle.name,
           text: await (await handle.getFile()).text(),
@@ -137,8 +116,7 @@ export function browserFiles(
       try {
         const handle: unknown = await pickers.save(name)
         if (handle === null) return null
-        if (!isHandle(handle))
-          throw new Error('The browser returned an invalid file destination.')
+        if (!isHandle(handle)) throw new Error('The browser returned an invalid file destination.')
         return binding(handle)
       } catch (error) {
         if (cancelled(error)) return null
@@ -146,9 +124,7 @@ export function browserFiles(
       }
     },
     download(name, text) {
-      const url = URL.createObjectURL(
-        new Blob([text], { type: 'text/plain;charset=utf-8' }),
-      )
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
       const link = document.createElement('a')
       link.href = url
       link.download = name

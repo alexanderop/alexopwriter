@@ -1,4 +1,6 @@
-:root, .app-shell, .ui-theme {
+:root,
+.app-shell,
+.ui-theme {
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --radius-control: 5px;
   --error-bg: #f5e4db;

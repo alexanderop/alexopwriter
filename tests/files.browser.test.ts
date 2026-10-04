@@ -33,9 +33,7 @@ it('writes through the production file adapter to OPFS and preserves conflicting
     expect(workspace.snapshot().documents[0]?.hasDiskBinding).toBe(true)
     workspace.edited(activeId, 'Saved through the real browser adapter. 🌿')
     await workspace.save(activeId)
-    expect(await (await handle.getFile()).text()).toBe(
-      'Saved through the real browser adapter. 🌿',
-    )
+    expect(await (await handle.getFile()).text()).toBe('Saved through the real browser adapter. 🌿')
     expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('saved')
     const external = await handle.createWritable()
     await external.write('External file change')
@@ -45,9 +43,7 @@ it('writes through the production file adapter to OPFS and preserves conflicting
     await workspace.flush()
     expect(await (await handle.getFile()).text()).toBe('External file change')
     expect(workspace.snapshot().documents[0]?.text).toBe('Local edit to retain')
-    expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain(
-      'conflict',
-    )
+    expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain('conflict')
     expect((await recovery.list())[0]?.text).toBe('Local edit to retain')
   } finally {
     await workspace.dispose()

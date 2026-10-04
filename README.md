@@ -93,7 +93,7 @@ import { indexedDbRecovery } from './src/features/documents/adapters/indexedDbRe
 
 const recovery = indexedDbRecovery()
 const stop = recovery.drafts.subscribe((state) => {
-	if (state.status === 'ready') console.log(state.value)
+  if (state.status === 'ready') console.log(state.value)
 })
 
 const savedDrafts = await recovery.drafts.read()
@@ -131,3 +131,7 @@ Run `pnpm check:architecture` to check boundaries. If the preview port is occupi
 ## UI library
 
 Reusable controls live in `src/shared/ui`. They use Reka UI and Tailwind with shared light/dark tokens. Run `pnpm dev` and open `/design-system.html` to inspect variants, sizes, fields, keyboard focus, and disabled states. See [architecture](docs/architecture.md) for import rules and verification.
+
+## Formatting
+
+Run `pnpm format` to format source, tests, configuration, and documentation with Oxfmt. Run `pnpm format:check` to check without writing. `pnpm verify` checks formatting first, including in CI. Generated and ignored files, the pnpm lockfile, and the unrelated `tamagotchi` directory are excluded.

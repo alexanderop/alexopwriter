@@ -14,11 +14,18 @@ defineEmits<{
   'remove-writing': []
 }>()
 function availability(files: ModelFiles) {
-  return { available: 'Downloaded in this browser', partial: 'Download incomplete', absent: 'Not downloaded', unknown: 'Download status unavailable' }[files]
+  return {
+    available: 'Downloaded in this browser',
+    partial: 'Download incomplete',
+    absent: 'Not downloaded',
+    unknown: 'Download status unavailable',
+  }[files]
 }
 </script>
 <template>
-  <p class="panel-description">Models download from Hugging Face. Your text and images are processed in this browser.</p>
+  <p class="panel-description">
+    Models download from Hugging Face. Your text and images are processed in this browser.
+  </p>
   <section class="model-card" aria-label="Image description model">
     <span class="eyebrow">IMAGE DESCRIPTIONS · ENGLISH</span>
     <h3>{{ CAPTION_MODEL.name }}</h3>
@@ -31,10 +38,25 @@ function availability(files: ModelFiles) {
       <BaseButton @click="$emit('cancel-caption')">Cancel image model</BaseButton>
     </template>
     <template v-else-if="caption.phase !== 'removing'">
-      <BaseButton v-if="caption.files !== 'available'" variant="primary" @click="$emit('download-caption')">{{ caption.phase === 'error' || caption.files === 'partial' ? 'Retry image model download' : 'Download image model' }}</BaseButton>
-      <p v-else-if="caption.phase !== 'ready'" class="panel-description">Available. Loads when you generate a description.</p>
-      <BaseButton v-if="caption.phase === 'ready'" @click="$emit('cancel-caption')">Unload image model</BaseButton>
-      <BaseButton v-if="caption.files !== 'absent'" variant="text" @click="$emit('remove-caption')">Remove image model files</BaseButton>
+      <BaseButton
+        v-if="caption.files !== 'available'"
+        variant="primary"
+        @click="$emit('download-caption')"
+        >{{
+          caption.phase === 'error' || caption.files === 'partial'
+            ? 'Retry image model download'
+            : 'Download image model'
+        }}</BaseButton
+      >
+      <p v-else-if="caption.phase !== 'ready'" class="panel-description">
+        Available. Loads when you generate a description.
+      </p>
+      <BaseButton v-if="caption.phase === 'ready'" @click="$emit('cancel-caption')"
+        >Unload image model</BaseButton
+      >
+      <BaseButton v-if="caption.files !== 'absent'" variant="text" @click="$emit('remove-caption')"
+        >Remove image model files</BaseButton
+      >
     </template>
   </section>
   <section class="model-card" aria-label="Writing help model">
@@ -49,10 +71,22 @@ function availability(files: ModelFiles) {
       <BaseButton @click="$emit('cancel-writing')">Cancel writing model</BaseButton>
     </template>
     <template v-else>
-      <BaseButton v-if="writing.phase !== 'ready'" variant="primary" @click="$emit('enable-writing')">{{ writingFiles === 'available' ? 'Enable writing model' : 'Download & enable' }}</BaseButton>
+      <BaseButton
+        v-if="writing.phase !== 'ready'"
+        variant="primary"
+        @click="$emit('enable-writing')"
+        >{{
+          writingFiles === 'available' ? 'Enable writing model' : 'Download & enable'
+        }}</BaseButton
+      >
       <p v-else class="ready-state">Ready on this device</p>
-      <BaseButton variant="text" class="remove-model" @click="$emit('remove-writing')">Remove downloaded model</BaseButton>
+      <BaseButton variant="text" class="remove-model" @click="$emit('remove-writing')"
+        >Remove downloaded model</BaseButton
+      >
     </template>
   </section>
-  <p class="panel-description">Writing checks work without a model. Removing model files does not change your documents or saved alt text.</p>
+  <p class="panel-description">
+    Writing checks work without a model. Removing model files does not change your documents or
+    saved alt text.
+  </p>
 </template>

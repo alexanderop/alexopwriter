@@ -1,10 +1,4 @@
-import {
-  shallowReadonly,
-  shallowRef,
-  toValue,
-  watchEffect,
-  type MaybeRefOrGetter,
-} from 'vue'
+import { shallowReadonly, shallowRef, toValue, watchEffect, type MaybeRefOrGetter } from 'vue'
 import type { QueryAtom } from './queryAtom'
 
 export function useQueryAtom<A>(source: MaybeRefOrGetter<QueryAtom<A>>) {

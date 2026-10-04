@@ -2,5 +2,13 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "jsPlugins": ["./tooling/oxlint-plugin.mjs"],
   "rules": { "writer-architecture/boundaries": "error" },
-  "ignorePatterns": ["tamagotchi/**", ".audit/**", "dist/**", ".features-gen/**", "verification-artifacts/**", "test-results/**", "playwright-report/**"]
+  "ignorePatterns": [
+    "tamagotchi/**",
+    ".audit/**",
+    "dist/**",
+    ".features-gen/**",
+    "verification-artifacts/**",
+    "test-results/**",
+    "playwright-report/**"
+  ]
 }

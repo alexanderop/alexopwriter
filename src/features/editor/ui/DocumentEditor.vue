@@ -1,23 +1,28 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, useTemplateRef, watch } from 'vue'
 import { Compartment, EditorState } from '@codemirror/state'
-import {
-  EditorView,
-  keymap,
-  placeholder,
-  drawSelection,
-} from '@codemirror/view'
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  isolateHistory,
-} from '@codemirror/commands'
+import { EditorView, keymap, placeholder, drawSelection } from '@codemirror/view'
+import { defaultKeymap, history, historyKeymap, isolateHistory } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { Vim, getCM, vim } from '@replit/codemirror-vim'
-import { clipboardImages, encodeClipboardImages, embeddedImages, imageMarkdown, type ImageTarget } from '../images'
-import { addImagePaste, removeImagePaste, pendingImagePastes, imageWidgets, imageEditAction, imageTargets, addImageTarget, removeImageTarget } from '../imageExtensions'
+import {
+  clipboardImages,
+  encodeClipboardImages,
+  embeddedImages,
+  imageMarkdown,
+  type ImageTarget,
+} from '../images'
+import {
+  addImagePaste,
+  removeImagePaste,
+  pendingImagePastes,
+  imageWidgets,
+  imageEditAction,
+  imageTargets,
+  addImageTarget,
+  removeImageTarget,
+} from '../imageExtensions'
 import { markdownHighlight } from '../markdown.ts'
 
 import type { SelectionTarget } from '../ports'
@@ -62,7 +67,10 @@ function makeState(text: string) {
       pendingImagePastes,
       imageTargets,
       imageWidgets,
-      imageEditAction.of((position) => { const target = captureImage(position); if (target) emit('image', target) }),
+      imageEditAction.of((position) => {
+        const target = captureImage(position)
+        if (target) emit('image', target)
+      }),
       syntaxHighlighting(markdownHighlight),
       EditorView.lineWrapping,
       placeholder('Start writing. This space is yours.'),
@@ -135,37 +143,40 @@ function pasteImages(event: ClipboardEvent): boolean {
   const id = Symbol('image paste')
   const { from, to } = view.state.selection.main
   view.dispatch({ effects: addImagePaste.of({ id, from, to }) })
-  void (props.encodeImages ?? encodeClipboardImages)(files).then((insert) => {
-    if (!view) return
-    const state = documentId === currentId ? view.state : states.get(documentId)
-    const target = state?.field(pendingImagePastes).get(id)
-    if (!state || !target) {
-      emit('error', new Error('The selected passage changed. Paste the image again.'))
-      return
-    }
-    const selection = state.selection.main
-    const transaction = state.update({
-      changes: { from: target.from, to: target.to, insert },
-      selection: selection.from === target.from && selection.to === target.to
-        ? { anchor: target.from + insert.length }
-        : undefined,
-      effects: removeImagePaste.of(id),
-      annotations: isolateHistory.of('full'),
+  void (props.encodeImages ?? encodeClipboardImages)(files)
+    .then((insert) => {
+      if (!view) return
+      const state = documentId === currentId ? view.state : states.get(documentId)
+      const target = state?.field(pendingImagePastes).get(id)
+      if (!state || !target) {
+        emit('error', new Error('The selected passage changed. Paste the image again.'))
+        return
+      }
+      const selection = state.selection.main
+      const transaction = state.update({
+        changes: { from: target.from, to: target.to, insert },
+        selection:
+          selection.from === target.from && selection.to === target.to
+            ? { anchor: target.from + insert.length }
+            : undefined,
+        effects: removeImagePaste.of(id),
+        annotations: isolateHistory.of('full'),
+      })
+      if (documentId === currentId) view.dispatch(transaction)
+      else {
+        states.set(documentId, transaction.state)
+        emit('change', documentId, transaction.state.doc.toString())
+      }
     })
-    if (documentId === currentId) view.dispatch(transaction)
-    else {
-      states.set(documentId, transaction.state)
-      emit('change', documentId, transaction.state.doc.toString())
-    }
-  }).catch((error: unknown) => {
-    if (!view) return
-    if (documentId === currentId) view.dispatch({ effects: removeImagePaste.of(id) })
-    else {
-      const state = states.get(documentId)
-      if (state) states.set(documentId, state.update({ effects: removeImagePaste.of(id) }).state)
-    }
-    emit('error', error instanceof Error ? error : new Error('The image could not be pasted.'))
-  })
+    .catch((error: unknown) => {
+      if (!view) return
+      if (documentId === currentId) view.dispatch({ effects: removeImagePaste.of(id) })
+      else {
+        const state = states.get(documentId)
+        if (state) states.set(documentId, state.update({ effects: removeImagePaste.of(id) }).state)
+      }
+      emit('error', error instanceof Error ? error : new Error('The image could not be pasted.'))
+    })
   return true
 }
 function captureImage(position: number): ImageTarget | null {
@@ -174,21 +185,37 @@ function captureImage(position: number): ImageTarget | null {
   if (!image) return null
   const id = Symbol('image target')
   view.dispatch({ effects: addImageTarget.of({ id, from: image.from, to: image.to }) })
-  return { id, documentId: currentId, original: view.state.doc.sliceString(image.from, image.to), url: image.url, alt: image.alt }
+  return {
+    id,
+    documentId: currentId,
+    original: view.state.doc.sliceString(image.from, image.to),
+    url: image.url,
+    alt: image.alt,
+  }
 }
 function releaseImage(target: ImageTarget) {
   if (!view) return
   if (target.documentId === currentId) view.dispatch({ effects: removeImageTarget.of(target.id) })
   else {
     const state = states.get(target.documentId)
-    if (state) states.set(target.documentId, state.update({ effects: removeImageTarget.of(target.id) }).state)
+    if (state)
+      states.set(
+        target.documentId,
+        state.update({ effects: removeImageTarget.of(target.id) }).state,
+      )
   }
 }
 function applyImageAlt(target: ImageTarget, alt: string): boolean {
   if (!view || target.documentId !== currentId) return false
   const mapped = view.state.field(imageTargets).get(target.id)
-  if (!mapped || view.state.doc.sliceString(mapped.from, mapped.to) !== target.original) return false
-  if (!embeddedImages(view.state.doc.toString()).some((image) => image.from === mapped.from && image.to === mapped.to && image.url === target.url)) return false
+  if (!mapped || view.state.doc.sliceString(mapped.from, mapped.to) !== target.original)
+    return false
+  if (
+    !embeddedImages(view.state.doc.toString()).some(
+      (image) => image.from === mapped.from && image.to === mapped.to && image.url === target.url,
+    )
+  )
+    return false
   view.dispatch({
     changes: { from: mapped.from, to: mapped.to, insert: imageMarkdown(alt, target.url) },
     effects: removeImageTarget.of(target.id),
@@ -208,10 +235,7 @@ function captureSelection(): SelectionTarget | null {
     documentId: currentId,
   }
 }
-function applyReplacement(
-  target: SelectionTarget,
-  replacement: string,
-): boolean {
+function applyReplacement(target: SelectionTarget, replacement: string): boolean {
   if (
     !view ||
     target.documentId !== currentId ||
@@ -234,8 +258,12 @@ function selectRange(from: number, to: number): SelectionTarget | null {
   return captureSelection()
 }
 function hasPendingImages(): boolean {
-  return Boolean(view?.state.field(pendingImagePastes).size) ||
-    [...states.entries()].some(([id, state]) => id !== currentId && state.field(pendingImagePastes).size > 0)
+  return (
+    Boolean(view?.state.field(pendingImagePastes).size) ||
+    [...states.entries()].some(
+      ([id, state]) => id !== currentId && state.field(pendingImagePastes).size > 0,
+    )
+  )
 }
 defineExpose({
   captureImage,

@@ -1,4 +1,9 @@
-import type { DocumentSnapshot, RecoveryRecord, RecoveryStatus, DiskStatus } from '../domain/document'
+import type {
+  DocumentSnapshot,
+  RecoveryRecord,
+  RecoveryStatus,
+  DiskStatus,
+} from '../domain/document'
 import type { DiskBinding, WorkspaceDependencies } from './ports'
 export type WorkspaceSnapshot = {
   readonly documents: readonly DocumentSnapshot[]
@@ -70,10 +75,7 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
     if (!disposed) for (const listener of listeners) listener(snapshot())
   }
   function report(cause: unknown) {
-    error =
-      cause instanceof Error
-        ? cause.message
-        : 'The operation could not be completed.'
+    error = cause instanceof Error ? cause.message : 'The operation could not be completed.'
     emit()
   }
   function append(
@@ -122,10 +124,7 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
           doc.revision === revision ? { kind: 'saved', revision } : { kind: 'pending' }
       } catch (cause) {
         doc.recoveryStatus = { kind: 'failed' }
-        error =
-          cause instanceof Error
-            ? cause.message
-            : 'The operation could not be completed.'
+        error = cause instanceof Error ? cause.message : 'The operation could not be completed.'
       }
       emit()
     }
@@ -158,32 +157,17 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       const superseded = new Set(
         records.flatMap((record) =>
           record.parent
-            ? [
-                JSON.stringify([
-                  record.id,
-                  record.parent.actor,
-                  record.parent.revision,
-                ]),
-              ]
+            ? [JSON.stringify([record.id, record.parent.actor, record.parent.revision])]
             : [],
         ),
       )
-      for (const record of [...records].sort(
-        (a, b) => b.updatedAt - a.updatedAt,
-      )) {
-        if (
-          superseded.has(
-            JSON.stringify([record.id, record.actor, record.revision]),
-          )
-        )
-          continue
+      for (const record of [...records].sort((a, b) => b.updatedAt - a.updatedAt)) {
+        if (superseded.has(JSON.stringify([record.id, record.actor, record.revision]))) continue
 
         const identity = JSON.stringify([record.id, record.name, record.text])
         if (seen.has(identity)) continue
         seen.add(identity)
-        const competing = [...documents.values()].some(
-          (doc) => doc.id === record.id,
-        )
+        const competing = [...documents.values()].some((doc) => doc.id === record.id)
         const id = competing ? nextId() : record.id
         const name = competing ? `${record.name} (recovered copy)` : record.name
         const doc = append(name, record.text, null, id)
@@ -200,33 +184,24 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       report(cause)
     }
   }
-  async function write(
-    doc: DocumentState,
-    target: DiskBinding,
-    baseline: string,
-  ) {
+  async function write(doc: DocumentState, target: DiskBinding, baseline: string) {
     const text = doc.text
     const revision = doc.revision
     doc.diskStatus = { kind: 'saving', revision }
     emit()
     try {
       if ((await target.read()) !== baseline) {
-        doc.diskStatus =
-          { kind: 'conflict' }
+        doc.diskStatus = { kind: 'conflict' }
         emit()
         return
       }
       await target.write(text)
       doc.binding = target
       doc.baseline = text
-      doc.diskStatus =
-        doc.revision === revision ? { kind: 'saved', revision } : { kind: 'dirty' }
+      doc.diskStatus = doc.revision === revision ? { kind: 'saved', revision } : { kind: 'dirty' }
     } catch (cause) {
       doc.diskStatus = { kind: 'failed' }
-      error =
-        cause instanceof Error
-          ? cause.message
-          : 'The operation could not be completed.'
+      error = cause instanceof Error ? cause.message : 'The operation could not be completed.'
     }
     emit()
   }
@@ -234,16 +209,11 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
     const doc = documents.get(id)
     if (!doc || disposed) return Promise.resolve()
 
-    const destination = (
-      doc.binding ? Promise.resolve(doc.binding) : files.saveAs(doc.name)
-    ).then(
+    const destination = (doc.binding ? Promise.resolve(doc.binding) : files.saveAs(doc.name)).then(
       (target): DestinationReady => ({ kind: 'ready', target }),
       (cause: unknown): DestinationFailed => ({
         kind: 'failed',
-        cause:
-          cause instanceof Error
-            ? cause
-            : new Error('Could not select a destination.'),
+        cause: cause instanceof Error ? cause : new Error('Could not select a destination.'),
       }),
     )
     const previous = diskWork
@@ -257,8 +227,7 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
           emit()
           return
         }
-        const baseline =
-          doc.binding === target ? doc.baseline : await target.read()
+        const baseline = doc.binding === target ? doc.baseline : await target.read()
         await write(doc, target, baseline)
       } catch (cause) {
         doc.diskStatus = { kind: 'failed' }

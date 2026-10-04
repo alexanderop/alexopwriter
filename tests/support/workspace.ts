@@ -1,8 +1,15 @@
-import { createWorkspace, type WorkspaceDependencies, type RecoveryStore, type RecoveryRecord } from '../../src/features/documents'
+import {
+  createWorkspace,
+  type WorkspaceDependencies,
+  type RecoveryStore,
+  type RecoveryRecord,
+} from '../../src/features/documents'
 export function memoryRecovery(): RecoveryStore {
   const rows = new Map<string, RecoveryRecord>()
   return {
-    async list() { return structuredClone([...rows.values()]) },
+    async list() {
+      return structuredClone([...rows.values()])
+    },
     async put(record) {
       const key = JSON.stringify([record.id, record.actor])
       const previous = rows.get(key)
@@ -16,12 +23,14 @@ export function manualScheduler() {
   return {
     schedule(_delay: number, task: () => void) {
       tasks.add(task)
-      return () => { tasks.delete(task) }
+      return () => {
+        tasks.delete(task)
+      }
     },
     run() {
       const pending = [...tasks]
       tasks.clear()
-      pending.forEach(task => task())
+      pending.forEach((task) => task())
     },
     pending: () => tasks.size,
   }
@@ -30,7 +39,15 @@ export function testWorkspace(options: Partial<WorkspaceDependencies> = {}) {
   let id = 0
   return createWorkspace({
     recovery: memoryRecovery(),
-    files: { async open() { return null }, async saveAs() { return null }, download() {} },
+    files: {
+      async open() {
+        return null
+      },
+      async saveAs() {
+        return null
+      },
+      download() {},
+    },
     actor: 'test',
     id: () => `${options.actor ?? 'document'}-${++id}`,
     now: () => 100,

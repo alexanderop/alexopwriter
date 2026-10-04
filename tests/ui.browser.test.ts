@@ -10,21 +10,23 @@ import { BaseTextarea } from '../src/shared/ui/textarea'
 import '../src/style.css'
 
 it('keeps button keyboard activation, disabled behavior, and explicit focus inside a form', async () => {
-  render(defineComponent({
-    components: { BaseButton },
-    setup() {
-      const clicks = ref(0)
-      const submits = ref(0)
-      const action = useTemplateRef<InstanceType<typeof BaseButton>>('action')
-      return { clicks, submits, action }
-    },
-    template: `<form @submit.prevent="submits++">
+  render(
+    defineComponent({
+      components: { BaseButton },
+      setup() {
+        const clicks = ref(0)
+        const submits = ref(0)
+        const action = useTemplateRef<InstanceType<typeof BaseButton>>('action')
+        return { clicks, submits, action }
+      },
+      template: `<form @submit.prevent="submits++">
       <BaseButton ref="action" @click="clicks++" aria-label="Save draft">Save</BaseButton>
       <BaseButton disabled @click="clicks++">Unavailable</BaseButton>
       <BaseButton @click="action?.focus()">Focus save</BaseButton>
       <output>{{ clicks }} clicks, {{ submits }} submits</output>
     </form>`,
-  }))
+    }),
+  )
   await page.getByRole('button', { name: 'Focus save' }).click()
   await expect.element(page.getByRole('button', { name: 'Save draft' })).toHaveFocus()
   await userEvent.keyboard('{Enter}')
@@ -36,28 +38,33 @@ it('keeps button keyboard activation, disabled behavior, and explicit focus insi
 })
 
 it('preserves native change events, model updates, and textarea focus', async () => {
-  render(defineComponent({
-    components: { BaseButton, BaseInput, BaseTextarea },
-    setup() {
-      const title = ref('Draft')
-      const alt = ref('')
-      const changed = ref('')
-      const description = useTemplateRef<InstanceType<typeof BaseTextarea>>('description')
-      function change(event: Event) { if (event.target instanceof HTMLInputElement) changed.value = event.target.value }
-      return { title, alt, changed, description, change }
-    },
-    template: `<div><BaseInput v-model="title" aria-label="Title" @change="change" />
+  render(
+    defineComponent({
+      components: { BaseButton, BaseInput, BaseTextarea },
+      setup() {
+        const title = ref('Draft')
+        const alt = ref('')
+        const changed = ref('')
+        const description = useTemplateRef<InstanceType<typeof BaseTextarea>>('description')
+        function change(event: Event) {
+          if (event.target instanceof HTMLInputElement) changed.value = event.target.value
+        }
+        return { title, alt, changed, description, change }
+      },
+      template: `<div><BaseInput v-model="title" aria-label="Title" @change="change" />
       <BaseTextarea ref="description" v-model="alt" aria-label="Description" />
       <BaseButton @click="description?.focus()">Focus description</BaseButton>
       <output>{{ title }} / {{ changed }} / {{ alt }}</output></div>`,
-  }))
+    }),
+  )
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill('New name')
   await page.getByRole('button', { name: 'Focus description' }).click()
-  await expect.element(page.getByRole('textbox', { name: 'Description', exact: true })).toHaveFocus()
+  await expect
+    .element(page.getByRole('textbox', { name: 'Description', exact: true }))
+    .toHaveFocus()
   await userEvent.keyboard('A forest')
   await expect.element(page.getByRole('status')).toHaveTextContent('New name / New name / A forest')
 })
-
 
 it('renders every shared control with accessible contrast in both themes', async () => {
   await render(UiGallery)

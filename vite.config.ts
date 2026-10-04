@@ -57,6 +57,8 @@ export default defineConfig({
   preview: { port: 5186, strictPort: true },
   build: {
     target: 'es2022',
-    ...(process.env['WRITER_RUN_DIR'] ? { outDir: join(process.env['WRITER_RUN_DIR'], 'build') } : {}),
+    ...(process.env['WRITER_RUN_DIR']
+      ? { outDir: join(process.env['WRITER_RUN_DIR'], 'build') }
+      : {}),
   },
 })

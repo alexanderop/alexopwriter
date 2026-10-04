@@ -1,9 +1,7 @@
 import { z } from 'zod'
 import { MODEL_INFO } from './protocol.ts'
 
-const tokenizerSchema = z
-  .object({ model: z.object({ type: z.string() }).loose() })
-  .loose()
+const tokenizerSchema = z.object({ model: z.object({ type: z.string() }).loose() }).loose()
 const configSchema = z
   .object({ tokenizer_class: z.enum(['Qwen2Tokenizer', 'Qwen2TokenizerFast']) })
   .loose()
@@ -17,8 +15,7 @@ async function loadPinnedJson(file: string, options: TokenizerFileOptions) {
   const cached = await options.cache?.match(url)
   if (cached) return await cached.json()
   const response = await options.fetchFile(url)
-  if (!response.ok)
-    throw new Error(`Could not download ${file}: HTTP ${response.status}`)
+  if (!response.ok) throw new Error(`Could not download ${file}: HTTP ${response.status}`)
   const data: unknown = await response.clone().json()
   if (file === 'tokenizer.json') tokenizerSchema.parse(data)
   else configSchema.parse(data)
@@ -29,10 +26,7 @@ async function loadPinnedJson(file: string, options: TokenizerFileOptions) {
 export async function loadPinnedTokenizerFiles(options?: TokenizerFileOptions) {
   const dependencies = options ?? {
     fetchFile: (url: string) => fetch(url),
-    cache:
-      'caches' in globalThis
-        ? await caches.open('alexopwriter-model-tokenizer')
-        : undefined,
+    cache: 'caches' in globalThis ? await caches.open('alexopwriter-model-tokenizer') : undefined,
   }
   const [tokenizer, config] = await Promise.all([
     loadPinnedJson('tokenizer.json', dependencies),

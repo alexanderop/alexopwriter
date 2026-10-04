@@ -9,9 +9,7 @@ const recordSchema = z.object({
   text: z.string(),
   revision: z.number().int().nonnegative(),
   updatedAt: z.number().finite(),
-  parent: z
-    .object({ actor: z.string(), revision: z.number().int().nonnegative() })
-    .optional(),
+  parent: z.object({ actor: z.string(), revision: z.number().int().nonnegative() }).optional(),
 })
 export function indexedDbRecovery(name = 'alexopwriter-web') {
   const store = createIndexedDbStore<RecoveryRecord, [string, string]>({

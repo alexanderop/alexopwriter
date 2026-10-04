@@ -1,5 +1,8 @@
 import { expect, test } from 'vitest'
-import { createImageCaption, type CaptionWorker } from '../src/features/assistance/adapters/imageCaption'
+import {
+  createImageCaption,
+  type CaptionWorker,
+} from '../src/features/assistance/adapters/imageCaption'
 import type { CaptionRequest } from '../src/features/assistance/adapters/captionProtocol'
 import type { ModelFiles } from '../src/features/assistance/adapters/modelAssets'
 const source = 'data:image/png;base64,YQ=='
@@ -8,10 +11,38 @@ function setup(files: ModelFiles = 'available') {
   let starts = 0
   let removed = false
   let terminateCount = 0
-  const worker: CaptionWorker = { onmessage: null, onerror: null, postMessage: (request) => requests.push(request), terminate: () => { terminateCount++ } }
-  const caption = createImageCaption({ createWorker: () => { starts++; return worker }, inspect: async () => files, removeFiles: async () => { removed = true; files = 'absent' } })
+  const worker: CaptionWorker = {
+    onmessage: null,
+    onerror: null,
+    postMessage: (request) => requests.push(request),
+    terminate: () => {
+      terminateCount++
+    },
+  }
+  const caption = createImageCaption({
+    createWorker: () => {
+      starts++
+      return worker
+    },
+    inspect: async () => files,
+    removeFiles: async () => {
+      removed = true
+      files = 'absent'
+    },
+  })
   const reply = (data: unknown) => worker.onmessage?.(new MessageEvent('message', { data }))
-  return { caption, requests, reply, worker, starts: () => starts, removed: () => removed, terminateCount: () => terminateCount, setFiles: (next: ModelFiles) => { files = next } }
+  return {
+    caption,
+    requests,
+    reply,
+    worker,
+    starts: () => starts,
+    removed: () => removed,
+    terminateCount: () => terminateCount,
+    setFiles: (next: ModelFiles) => {
+      files = next
+    },
+  }
 }
 test('opening inventory never downloads and describe rejects evicted or missing files', async () => {
   const state = setup('partial')
@@ -88,7 +119,10 @@ test('older inventory reads cannot restore downloaded status after removal', asy
   const reads: ((files: ModelFiles) => void)[] = []
   const caption = createImageCaption({
     inspect: () => new Promise((resolve) => reads.push(resolve)),
-    removeFiles: () => new Promise((resolve) => { finishRemoval = resolve }),
+    removeFiles: () =>
+      new Promise((resolve) => {
+        finishRemoval = resolve
+      }),
   })
   const removing = caption.remove()
   const older = caption.refresh()

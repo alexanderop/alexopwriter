@@ -29,6 +29,8 @@ export type DocumentSnapshot = {
   readonly hasDiskBinding: boolean
 }
 export function hasUnsecuredChanges(document: DocumentSnapshot): boolean {
-  return document.recoveryStatus.kind !== 'saved' ||
+  return (
+    document.recoveryStatus.kind !== 'saved' ||
     (document.hasDiskBinding && document.diskStatus.kind !== 'saved')
+  )
 }

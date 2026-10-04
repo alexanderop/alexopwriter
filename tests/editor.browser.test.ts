@@ -23,16 +23,10 @@ test('Vim inserts text and jj returns to normal mode', async () => {
   await render(Harness)
   await page.getByRole('textbox', { name: 'Document editor' }).click()
   await userEvent.keyboard('iA quiet placejj')
-  await expect
-    .element(page.getByLabelText('Current text'))
-    .toHaveTextContent('A quiet place')
-  await expect
-    .element(page.getByLabelText('Current mode'))
-    .toHaveTextContent('NORMAL')
+  await expect.element(page.getByLabelText('Current text')).toHaveTextContent('A quiet place')
+  await expect.element(page.getByLabelText('Current mode')).toHaveTextContent('NORMAL')
   await userEvent.keyboard('u')
-  await expect
-    .element(page.getByLabelText('Current text'))
-    .toHaveTextContent('')
+  await expect.element(page.getByLabelText('Current text')).toHaveTextContent('')
 })
 
 test('a correction is one undoable edit and document switches preserve history', async () => {
@@ -82,8 +76,7 @@ test('a proposal captured before another edit cannot replace newer text', async 
         const target = editor.value?.selectRange(0, 4)
         if (!target) return
         editor.value?.applyReplacement(target, 'Newer')
-        rejected.value =
-          editor.value?.applyReplacement(target, 'Stale') === false
+        rejected.value = editor.value?.applyReplacement(target, 'Stale') === false
       }
       return { editor, rejected, check }
     },
@@ -94,9 +87,7 @@ test('a proposal captured before another edit cannot replace newer text', async 
   await expect
     .element(page.getByRole('textbox', { name: 'Document editor' }))
     .toHaveTextContent('Newer here')
-  await expect
-    .element(page.getByLabelText('Stale rejected'))
-    .toHaveTextContent('true')
+  await expect.element(page.getByLabelText('Stale rejected')).toHaveTextContent('true')
 })
 
 test('metadata revisions stale old proposals while fresh selections remain usable', async () => {
@@ -116,12 +107,9 @@ test('metadata revisions stale old proposals while fresh selections remain usabl
       }
       function apply() {
         if (beforeRename)
-          staleRejected.value =
-            editor.value?.applyReplacement(beforeRename, 'Old') === false
+          staleRejected.value = editor.value?.applyReplacement(beforeRename, 'Old') === false
         const target = editor.value?.selectRange(0, 4)
-        if (target)
-          freshApplied.value =
-            editor.value?.applyReplacement(target, 'Fresh') === true
+        if (target) freshApplied.value = editor.value?.applyReplacement(target, 'Fresh') === true
       }
       return { editor, revision, staleRejected, freshApplied, capture, apply }
     },
@@ -131,12 +119,8 @@ test('metadata revisions stale old proposals while fresh selections remain usabl
   await page.getByRole('button', { name: 'Capture before rename' }).click()
   await page.getByRole('button', { name: 'Rename document' }).click()
   await page.getByRole('button', { name: 'Apply after rename' }).click()
-  await expect
-    .element(page.getByLabelText('Old proposal rejected'))
-    .toHaveTextContent('true')
-  await expect
-    .element(page.getByLabelText('Fresh proposal applied'))
-    .toHaveTextContent('true')
+  await expect.element(page.getByLabelText('Old proposal rejected')).toHaveTextContent('true')
+  await expect.element(page.getByLabelText('Fresh proposal applied')).toHaveTextContent('true')
   await expect
     .element(page.getByRole('textbox', { name: 'Document editor' }))
     .toHaveTextContent('Fresh here')

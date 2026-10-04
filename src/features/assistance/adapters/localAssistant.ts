@@ -22,9 +22,7 @@ export function isModelCacheRequest(url: string): boolean {
     const parsed = new URL(url)
     return (
       parsed.origin === 'https://huggingface.co' &&
-      decodeURIComponent(parsed.pathname).startsWith(
-        `/${MODEL_INFO.id}/resolve/`,
-      )
+      decodeURIComponent(parsed.pathname).startsWith(`/${MODEL_INFO.id}/resolve/`)
     )
   } catch {
     return false
@@ -40,9 +38,7 @@ export async function removeModelCache(): Promise<void> {
   }
 }
 
-export function createLocalAssistant(
-  options: LocalAssistantOptions,
-): LocalAssistant {
+export function createLocalAssistant(options: LocalAssistantOptions): LocalAssistant {
   let state: AssistantState = {
     phase: 'disabled',
     progress: 0,
@@ -132,18 +128,13 @@ export function createLocalAssistant(
       try {
         connect().postMessage(request)
       } catch (error) {
-        fail(
-          error instanceof Error
-            ? error.message
-            : 'Could not start local help.',
-        )
+        fail(error instanceof Error ? error.message : 'Could not start local help.')
       }
     })
   const available = () => {
     if (disposed) throw new Error('Local help has been disposed.')
     if (removing) throw new Error('Wait for model removal to finish.')
-    if (pending !== null)
-      throw new Error('Local help is busy. Cancel the current operation first.')
+    if (pending !== null) throw new Error('Local help is busy. Cancel the current operation first.')
   }
   return {
     snapshot: () => state,
@@ -166,16 +157,14 @@ export function createLocalAssistant(
     },
     async suggest(action, text) {
       available()
-      if (state.phase !== 'ready')
-        throw new Error('Download and enable local help first.')
+      if (state.phase !== 'ready') throw new Error('Download and enable local help first.')
       const parsed = requestSchema.safeParse({
         type: 'suggest',
         id: String(++sequence),
         action,
         text,
       })
-      if (!parsed.success)
-        throw new Error('Select between 1 and 2,000 characters for local help.')
+      if (!parsed.success) throw new Error('Select between 1 and 2,000 characters for local help.')
       publish({
         phase: 'running',
         progress: 100,
@@ -214,10 +203,7 @@ export function createLocalAssistant(
           publish({
             phase: 'error',
             progress: 0,
-            message:
-              error instanceof Error
-                ? error.message
-                : 'Could not remove model files.',
+            message: error instanceof Error ? error.message : 'Could not remove model files.',
           })
         throw error
       } finally {

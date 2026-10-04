@@ -15,26 +15,52 @@ const variants = Object.keys(buttonVariants) as ButtonVariant[]
   <main class="ui-theme min-h-screen bg-paper p-6 font-system text-ink sm:p-12" :class="{ dark }">
     <div class="mx-auto max-w-4xl space-y-10">
       <header class="flex flex-wrap items-center justify-between gap-4">
-        <div><p class="text-sm text-muted">alexopwriter / shared UI</p><h1 class="text-3xl font-semibold">One consistent language.</h1></div>
-        <BaseButton variant="outline" :aria-pressed="dark" @click="dark = !dark">Dark theme</BaseButton>
+        <div>
+          <p class="text-sm text-muted">alexopwriter / shared UI</p>
+          <h1 class="text-3xl font-semibold">One consistent language.</h1>
+        </div>
+        <BaseButton variant="outline" :aria-pressed="dark" @click="dark = !dark"
+          >Dark theme</BaseButton
+        >
       </header>
       <section aria-labelledby="buttons-heading" class="space-y-4">
         <h2 id="buttons-heading">Buttons</h2>
-        <div v-for="variant in variants" :key="variant" class="flex flex-wrap items-center gap-4 rounded-control p-2" :class="variant === 'inverse' ? 'bg-ink text-paper' : ''">
-          <span class="w-20 text-sm" :class="variant === 'inverse' ? '' : 'text-muted'">{{ variant }}</span>
+        <div
+          v-for="variant in variants"
+          :key="variant"
+          class="flex flex-wrap items-center gap-4 rounded-control p-2"
+          :class="variant === 'inverse' ? 'bg-ink text-paper' : ''"
+        >
+          <span class="w-20 text-sm" :class="variant === 'inverse' ? '' : 'text-muted'">{{
+            variant
+          }}</span>
           <BaseButton :variant="variant" @click="clicks++">Small action</BaseButton>
           <BaseButton :variant="variant" size="md" @click="clicks++">Medium action</BaseButton>
-          <BaseButton :variant="variant" size="icon" :aria-label="`Add (${variant})`" @click="clicks++"><Plus :size="16" /></BaseButton>
+          <BaseButton
+            :variant="variant"
+            size="icon"
+            :aria-label="`Add (${variant})`"
+            @click="clicks++"
+            ><Plus :size="16"
+          /></BaseButton>
           <BaseButton :variant="variant" disabled>Unavailable</BaseButton>
         </div>
-        <p role="status" class="text-sm text-muted">{{ clicks }} actions. Use Tab to inspect keyboard focus.</p>
+        <p role="status" class="text-sm text-muted">
+          {{ clicks }} actions. Use Tab to inspect keyboard focus.
+        </p>
       </section>
       <section aria-labelledby="fields-heading" class="grid gap-4 sm:grid-cols-2">
         <h2 id="fields-heading" class="sm:col-span-2">Fields</h2>
         <label class="grid content-start gap-2">Document name<BaseInput v-model="name" /></label>
-        <label class="grid content-start gap-2">Quiet field<BaseInput v-model="name" variant="ghost" /></label>
-        <label class="grid content-start gap-2">Disabled field<BaseInput model-value="Unavailable" disabled /></label>
-        <label class="grid content-start gap-2">Image description<BaseTextarea v-model="description" rows="3" /></label>
+        <label class="grid content-start gap-2"
+          >Quiet field<BaseInput v-model="name" variant="ghost"
+        /></label>
+        <label class="grid content-start gap-2"
+          >Disabled field<BaseInput model-value="Unavailable" disabled
+        /></label>
+        <label class="grid content-start gap-2"
+          >Image description<BaseTextarea v-model="description" rows="3"
+        /></label>
       </section>
       <section aria-labelledby="tokens-heading">
         <h2 id="tokens-heading">Colors</h2>

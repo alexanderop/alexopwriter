@@ -6,13 +6,19 @@ import { DocumentEditor } from '../src/features/editor/ui'
 import { encodeClipboardImages, type ImageTarget } from '../src/features/editor/images'
 import { browserFiles } from '../src/features/documents/adapters/browserFiles'
 
-const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
+const png =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
 const markup = `![Pasted image](data:image/png;base64,${png})`
-const file = () => new File([Uint8Array.from(atob(png), (c) => c.charCodeAt(0))], 'image.png', { type: 'image/png' })
+const file = () =>
+  new File([Uint8Array.from(atob(png), (c) => c.charCodeAt(0))], 'image.png', { type: 'image/png' })
 function paste(files: File[]) {
   const data = new DataTransfer()
   files.forEach((image) => data.items.add(image))
-  document.querySelector('[aria-label="Document editor"]')?.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+  document
+    .querySelector('[aria-label="Document editor"]')
+    ?.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }),
+    )
 }
 async function harness(encodeImages = encodeClipboardImages, text = '') {
   const texts = ref<Record<string, string>>({ a: text, b: 'Second' })
@@ -20,11 +26,13 @@ async function harness(encodeImages = encodeClipboardImages, text = '') {
   const imageTarget = ref<ImageTarget | null>(null)
   const id = ref('a')
   const editor = ref<InstanceType<typeof DocumentEditor> | null>(null)
-  const mounted = await render(defineComponent({
-    components: { DocumentEditor },
-    setup: () => ({ texts, error, id, encodeImages, editor, imageTarget }),
-    template: `<DocumentEditor ref="editor" :document-id="id" :text="texts[id] || ''" :revision="0" :vim-enabled="false" :encode-images="encodeImages" @change="(key, text) => texts[key] = text" @error="error = $event.message" @image="imageTarget = $event" /><output aria-label="Paste error">{{ error }}</output>`,
-  }))
+  const mounted = await render(
+    defineComponent({
+      components: { DocumentEditor },
+      setup: () => ({ texts, error, id, encodeImages, editor, imageTarget }),
+      template: `<DocumentEditor ref="editor" :document-id="id" :text="texts[id] || ''" :revision="0" :vim-enabled="false" :encode-images="encodeImages" @change="(key, text) => texts[key] = text" @error="error = $event.message" @image="imageTarget = $event" /><output aria-label="Paste error">{{ error }}</output>`,
+    }),
+  )
   return { texts, error, id, editor, mounted, imageTarget }
 }
 const modifier = navigator.platform.includes('Mac') ? 'Meta' : 'Control'
@@ -35,7 +43,9 @@ test('real image decoding inserts ordered images as one undoable edit and atomic
   const canvas = document.createElement('canvas')
   canvas.width = 2
   canvas.height = 2
-  const secondBlob = await new Promise<Blob>((resolve) => canvas.toBlob((value) => resolve(value!), 'image/png'))
+  const secondBlob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((value) => resolve(value!), 'image/png'),
+  )
   const secondFile = new File([secondBlob], 'second.png', { type: 'image/png' })
   const secondMarkup = await encodeClipboardImages([secondFile])
   paste([file(), secondFile])
@@ -55,13 +65,22 @@ test('ordinary text paste retains native CodeMirror behavior', async () => {
   await page.getByRole('textbox').click()
   const data = new DataTransfer()
   data.setData('text/plain', 'Ordinary words')
-  document.querySelector('[aria-label="Document editor"]')?.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+  document
+    .querySelector('[aria-label="Document editor"]')
+    ?.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }),
+    )
   await expect.poll(() => texts.value['a']).toBe('Ordinary words')
 })
 
 test('pending images follow their original document and mapped edits', async () => {
   let finish: (value: string) => void = () => undefined
-  const { texts, id } = await harness(() => new Promise((resolve) => { finish = resolve }))
+  const { texts, id } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
   await page.getByRole('textbox').click()
   paste([file()])
   await userEvent.keyboard('Before ')
@@ -76,7 +95,13 @@ test('pending images follow their original document and mapped edits', async () 
 
 test('changing a pending selected passage cancels image replacement', async () => {
   let finish: (value: string) => void = () => undefined
-  const { texts, editor, error } = await harness(() => new Promise((resolve) => { finish = resolve }), 'Original')
+  const { texts, editor, error } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    'Original',
+  )
   editor.value?.selectRange(0, 8)
   paste([file()])
   await userEvent.keyboard('Newer')
@@ -87,7 +112,13 @@ test('changing a pending selected passage cancels image replacement', async () =
 
 test('delayed image completion preserves a moved caret for subsequent typing', async () => {
   let finish: (value: string) => void = () => undefined
-  const { texts, editor } = await harness(() => new Promise((resolve) => { finish = resolve }), 'Before After')
+  const { texts, editor } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    'Before After',
+  )
   editor.value?.selectRange(0, 0)
   paste([file()])
   editor.value?.selectRange(7, 7)
@@ -99,7 +130,13 @@ test('delayed image completion preserves a moved caret for subsequent typing', a
 
 test('delayed image completion preserves a newer selected passage for subsequent typing', async () => {
   let finish: (value: string) => void = () => undefined
-  const { texts, editor } = await harness(() => new Promise((resolve) => { finish = resolve }), 'Before After')
+  const { texts, editor } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    'Before After',
+  )
   editor.value?.selectRange(0, 6)
   paste([file()])
   editor.value?.selectRange(7, 12)
@@ -120,7 +157,12 @@ test('invalid image bytes and unsupported formats report errors without modifyin
 
 test('unmounted editors ignore late image completion', async () => {
   let finish: (value: string) => void = () => undefined
-  const { texts, mounted } = await harness(() => new Promise((resolve) => { finish = resolve }))
+  const { texts, mounted } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
   paste([file()])
   await mounted.unmount()
   finish(markup)
@@ -138,7 +180,9 @@ test('native save and reopen preserve exact embedded image data through a real f
     await binding?.write(markup)
     expect(await (await handle.getFile()).text()).toBe(markup)
     expect((await access.open())?.text).toBe(markup)
-  } finally { await root.removeEntry(name) }
+  } finally {
+    await root.removeEntry(name)
+  }
 })
 
 test('typing after paste follows the image and long image destinations render', async () => {
@@ -153,7 +197,9 @@ test('typing after paste follows the image and long image destinations render', 
     pixels.data[index] = seed >>> 24
   }
   context.putImageData(pixels, 0, 0)
-  const blob = await new Promise<Blob>((resolve) => canvas.toBlob((value) => resolve(value!), 'image/png'))
+  const blob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((value) => resolve(value!), 'image/png'),
+  )
   expect(blob.size).toBeGreaterThan(100_000)
   const { texts } = await harness()
   await page.getByRole('textbox').click()
@@ -165,7 +211,13 @@ test('typing after paste follows the image and long image destinations render', 
 
 test('a replacement spanning a pending caret cancels insertion', async () => {
   let finish: (value: string) => void = () => undefined
-  const { editor, texts, error } = await harness(() => new Promise((resolve) => { finish = resolve }), 'Original')
+  const { editor, texts, error } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    'Original',
+  )
   editor.value?.selectRange(4, 4)
   paste([file()])
   editor.value?.selectRange(0, 8)
@@ -177,7 +229,12 @@ test('a replacement spanning a pending caret cancels insertion', async () => {
 
 test('returning to a document before its paste completes clears the update guard', async () => {
   let finish: (value: string) => void = () => undefined
-  const { id, editor } = await harness(() => new Promise((resolve) => { finish = resolve }))
+  const { id, editor } = await harness(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
   paste([file()])
   expect(editor.value?.hasPendingImages()).toBe(true)
   id.value = 'b'
@@ -191,7 +248,10 @@ test('returning to a document before its paste completes clears the update guard
 })
 
 test('alt targets distinguish duplicate images, map preceding edits, preserve selection and undo once', async () => {
-  const { texts, editor, imageTarget } = await harness(encodeClipboardImages, `${markup}\n\n${markup} tail`)
+  const { texts, editor, imageTarget } = await harness(
+    encodeClipboardImages,
+    `${markup}\n\n${markup} tail`,
+  )
   await page.getByRole('button', { name: 'Edit alt text', exact: true }).nth(1).click()
   const target = imageTarget.value!
   editor.value!.selectRange(0, 0)

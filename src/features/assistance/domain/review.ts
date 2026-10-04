@@ -52,8 +52,7 @@ export function checkWriting(text: string): readonly WritingIssue[] {
     const pattern = new RegExp(`\\b${rule.phrase}\\b`, 'gi')
     for (const match of prose.matchAll(pattern)) {
       const replacement = /^[A-Z]/.test(match[0])
-        ? rule.replacements[0].charAt(0).toUpperCase() +
-          rule.replacements[0].slice(1)
+        ? rule.replacements[0].charAt(0).toUpperCase() + rule.replacements[0].slice(1)
         : rule.replacements[0]
       add(
         'simpler-phrase',

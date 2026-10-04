@@ -7,7 +7,12 @@ import { expect, it } from 'vitest'
 const project = process.cwd()
 function fixture(files: Record<string, string>) {
   const root = realpathSync(mkdtempSync(path.join(tmpdir(), 'writer-boundaries-')))
-  writeFileSync(path.join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { baseUrl: '.', paths: { '#feature/*': ['src/features/new-feature/*'] } } }))
+  writeFileSync(
+    path.join(root, 'tsconfig.json'),
+    JSON.stringify({
+      compilerOptions: { baseUrl: '.', paths: { '#feature/*': ['src/features/new-feature/*'] } },
+    }),
+  )
   for (const [file, text] of Object.entries(files)) {
     const destination = path.join(root, 'src', file)
     mkdirSync(path.dirname(destination), { recursive: true })
@@ -16,12 +21,20 @@ function fixture(files: Record<string, string>) {
   return root
 }
 function lint(root: string, vue: boolean) {
-  return spawnSync(process.execPath, [
-    '--experimental-strip-types',
-    path.join(project, vue ? 'node_modules/eslint/bin/eslint.js' : 'node_modules/oxlint/bin/oxlint'),
-    '--config', path.join(project, vue ? 'eslint.config.mjs' : '.oxlintrc.json'),
-    ...(vue ? ['src/**/*.vue', '--format', 'json'] : ['src', '--format', 'json']),
-  ], { cwd: root, encoding: 'utf8' })
+  return spawnSync(
+    process.execPath,
+    [
+      '--experimental-strip-types',
+      path.join(
+        project,
+        vue ? 'node_modules/eslint/bin/eslint.js' : 'node_modules/oxlint/bin/oxlint',
+      ),
+      '--config',
+      path.join(project, vue ? 'eslint.config.mjs' : '.oxlintrc.json'),
+      ...(vue ? ['src/**/*.vue', '--format', 'json'] : ['src', '--format', 'json']),
+    ],
+    { cwd: root, encoding: 'utf8' },
+  )
 }
 
 it('enforces feature and shared ownership through the actual Oxlint plugin', () => {
@@ -47,14 +60,23 @@ it('enforces feature and shared ownership through the actual Oxlint plugin', () 
     expect(result.status, result.stderr).toBe(1)
     const report = JSON.parse(result.stdout)
     for (const file of Object.keys(files)) {
-      expect(report.diagnostics.some((d: { filename: string; code: string }) => d.filename === `src/${file}` && d.code === 'writer-architecture(boundaries)'), file).toBe(true)
+      expect(
+        report.diagnostics.some(
+          (d: { filename: string; code: string }) =>
+            d.filename === `src/${file}` && d.code === 'writer-architecture(boundaries)',
+        ),
+        file,
+      ).toBe(true)
     }
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })
 
 it('enforces the same boundaries and shared controls in real Vue files', () => {
   const files = {
-    'features/new-feature/ui/ForeignPanel.vue': '<script setup lang="ts">import { workspace } from "../../documents"; void workspace</script><template><div /></template>',
+    'features/new-feature/ui/ForeignPanel.vue':
+      '<script setup lang="ts">import { workspace } from "../../documents"; void workspace</script><template><div /></template>',
     'app/RawButton.vue': '<template><button>Save</button></template>',
     'app/RawField.vue': '<template><input aria-label="Name" /></template>',
     'app/CustomColor.vue': '<template><BaseButton class="bg-red-500">Save</BaseButton></template>',
@@ -65,10 +87,17 @@ it('enforces the same boundaries and shared controls in real Vue files', () => {
     expect(result.status, result.stderr).toBe(1)
     const reports = JSON.parse(result.stdout)
     for (const file of Object.keys(files)) {
-      const report = reports.find((r: { filePath: string }) => r.filePath === path.join(root, 'src', file))
-      expect(report?.messages.some((m: { ruleId: string }) => m.ruleId.startsWith('writer-')), file).toBe(true)
+      const report = reports.find(
+        (r: { filePath: string }) => r.filePath === path.join(root, 'src', file),
+      )
+      expect(
+        report?.messages.some((m: { ruleId: string }) => m.ruleId.startsWith('writer-')),
+        file,
+      ).toBe(true)
     }
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })
 
 it('accepts public APIs, owned modules, shared components, and the hidden file importer', () => {
@@ -77,12 +106,15 @@ it('accepts public APIs, owned modules, shared components, and the hidden file i
     'features/new-feature/application/use.ts': 'export { count } from "../domain/rule"',
     'app/workflow.ts': 'export * from "../features/new-feature"',
     'shared/ui/button/index.ts': 'export { Primitive } from "reka-ui"',
-    'app/GoodPanel.vue': '<script setup lang="ts">import { BaseButton } from "../shared/ui/button"</script><template><BaseButton>Save</BaseButton><input hidden type="file" /></template>',
+    'app/GoodPanel.vue':
+      '<script setup lang="ts">import { BaseButton } from "../shared/ui/button"</script><template><BaseButton>Save</BaseButton><input hidden type="file" /></template>',
   })
   try {
     for (const vue of [false, true]) {
       const result = lint(root, vue)
       expect(result.status, result.stdout + result.stderr).toBe(0)
     }
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })

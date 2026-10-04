@@ -32,7 +32,10 @@ function controlledWorker() {
 
 async function readyAssistant() {
   const channel = controlledWorker()
-  const assistant = createLocalAssistant({ removeCache: async () => {}, createWorker: () => channel.worker })
+  const assistant = createLocalAssistant({
+    removeCache: async () => {},
+    createWorker: () => channel.worker,
+  })
   const loading = assistant.enable()
   channel.reply({ type: 'ready', id: channel.requests[0]?.id })
   await loading
@@ -43,7 +46,8 @@ describe('optional local assistance', () => {
   it('starts a worker only after explicit enable and reports progress', async () => {
     const channel = controlledWorker()
     let starts = 0
-    const assistant = createLocalAssistant({ removeCache: async () => {},
+    const assistant = createLocalAssistant({
+      removeCache: async () => {},
       createWorker: () => {
         starts += 1
         return channel.worker
@@ -106,7 +110,8 @@ describe('optional local assistance', () => {
   it('reports download failure and permits retry through a fresh worker', async () => {
     const channels = [controlledWorker(), controlledWorker()]
     let created = 0
-    const assistant = createLocalAssistant({ removeCache: async () => {},
+    const assistant = createLocalAssistant({
+      removeCache: async () => {},
       createWorker: () => {
         const channel = channels[created++]
         if (!channel) throw new Error('Unexpected worker')
@@ -132,9 +137,7 @@ describe('optional local assistance', () => {
 
   it('validates malformed worker responses and bounds selection size before inference', async () => {
     const { assistant, channel } = await readyAssistant()
-    await expect(
-      assistant.suggest('shorten', 'x'.repeat(2001)),
-    ).rejects.toThrow('2,000')
+    await expect(assistant.suggest('shorten', 'x'.repeat(2001))).rejects.toThrow('2,000')
     expect(channel.requests).toHaveLength(1)
     const result = assistant.suggest('heading', 'A passage.')
     channel.reply({ type: 'result', id: channel.requests[1]?.id, text: 42 })
@@ -178,18 +181,12 @@ describe('optional local assistance', () => {
       ),
     ).toBe(true)
     expect(
-      isModelCacheRequest(
-        `https://huggingface.co/${MODEL_INFO.id}-other/resolve/main/model.onnx`,
-      ),
+      isModelCacheRequest(`https://huggingface.co/${MODEL_INFO.id}-other/resolve/main/model.onnx`),
     ).toBe(false)
     expect(
-      isModelCacheRequest(
-        `https://example.com/${MODEL_INFO.id}/resolve/main/model.onnx`,
-      ),
+      isModelCacheRequest(`https://example.com/${MODEL_INFO.id}/resolve/main/model.onnx`),
     ).toBe(false)
-    expect(isModelCacheRequest('https://writer.example/assets/app.js')).toBe(
-      false,
-    )
+    expect(isModelCacheRequest('https://writer.example/assets/app.js')).toBe(false)
     expect(isModelCacheRequest('not-a-url')).toBe(false)
   })
 })

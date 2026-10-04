@@ -25,9 +25,7 @@ export function createIndexedDbStore<Row, Key extends IDBValidKey>(
   const channel =
     typeof BroadcastChannel === 'undefined'
       ? undefined
-      : new BroadcastChannel(
-          JSON.stringify(['alexopwriter-idb', options.name, options.store]),
-        )
+      : new BroadcastChannel(JSON.stringify(['alexopwriter-idb', options.name, options.store]))
 
   function invalidate(error?: Error) {
     for (const observer of observers) observer(error)
@@ -35,12 +33,7 @@ export function createIndexedDbStore<Row, Key extends IDBValidKey>(
   if (channel)
     channel.onmessage = (event: MessageEvent<unknown>) => {
       const data = event.data
-      if (
-        data !== null &&
-        typeof data === 'object' &&
-        'type' in data &&
-        data.type === 'committed'
-      )
+      if (data !== null && typeof data === 'object' && 'type' in data && data.type === 'committed')
         invalidate()
     }
   function revalidate() {
@@ -82,12 +75,10 @@ export function createIndexedDbStore<Row, Key extends IDBValidKey>(
           const store = database.createObjectStore(options.store, {
             keyPath: options.keyPath,
           })
-          for (const index of options.indexes)
-            store.createIndex(index.name, index.keyPath)
+          for (const index of options.indexes) store.createIndex(index.name, index.keyPath)
         }
       }
-      request.onerror = () =>
-        reject(request.error ?? new Error('Could not open IndexedDB.'))
+      request.onerror = () => reject(request.error ?? new Error('Could not open IndexedDB.'))
       request.onblocked = () =>
         close(new Error('IndexedDB upgrade is blocked by another connection.'))
       request.onsuccess = () => {
@@ -110,20 +101,14 @@ export function createIndexedDbStore<Row, Key extends IDBValidKey>(
               !store.indexNames.contains(index.name) ||
               store.index(index.name).unique ||
               store.index(index.name).multiEntry ||
-              JSON.stringify(store.index(index.name).keyPath) !==
-                JSON.stringify(index.keyPath)
+              JSON.stringify(store.index(index.name).keyPath) !== JSON.stringify(index.keyPath)
             )
               throw new Error('Unexpected IndexedDB index schema.')
           }
           connection = database
           database.onversionchange = () =>
-            close(
-              new Error(
-                'IndexedDB changed in another connection. Reopen the store.',
-              ),
-            )
-          database.onclose = () =>
-            close(new Error('IndexedDB connection closed unexpectedly.'))
+            close(new Error('IndexedDB changed in another connection. Reopen the store.'))
+          database.onclose = () => close(new Error('IndexedDB connection closed unexpectedly.'))
           resolve(database)
         } catch (error) {
           database.close()
@@ -156,10 +141,7 @@ export function createIndexedDbStore<Row, Key extends IDBValidKey>(
       transaction.onabort = () => {
         transactions.delete(transaction)
         reject(
-          failure ??
-            closed ??
-            transaction.error ??
-            new Error('IndexedDB transaction aborted.'),
+          failure ?? closed ?? transaction.error ?? new Error('IndexedDB transaction aborted.'),
         )
       }
       transaction.onerror = () => {
@@ -235,16 +217,13 @@ export function createIndexedDbStore<Row, Key extends IDBValidKey>(
       request.onsuccess = () => {
         try {
           const previous: unknown = request.result
-          const proposed = change(
-            previous === undefined ? undefined : options.decode(previous),
-          )
+          const proposed = change(previous === undefined ? undefined : options.decode(previous))
           if (closed) throw closed
           if (proposed === undefined) {
             result(undefined)
             return
           }
-          if (proposed instanceof Promise)
-            throw new Error('IndexedDB updates must be synchronous.')
+          if (proposed instanceof Promise) throw new Error('IndexedDB updates must be synchronous.')
           const row = options.decode(proposed)
           if (indexedDB.cmp(key, options.keyOf(row)) !== 0)
             throw new Error('An IndexedDB update cannot change its key.')

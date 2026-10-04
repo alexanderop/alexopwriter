@@ -12,14 +12,16 @@
     "test:logic": "vitest run --project logic",
     "test:browser": "vitest run --project browser",
     "test:e2e": "bddgen && playwright test --project chromium",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e",
     "test:model": "playwright test --config playwright.model.config.ts",
     "lint": "NODE_OPTIONS=--experimental-strip-types oxlint . --deny-warnings --report-unused-disable-directives && NODE_OPTIONS=--experimental-strip-types eslint \"src/**/*.vue\" --max-warnings 0",
     "test:compat": "bddgen && playwright test",
     "check:architecture": "NODE_OPTIONS=--experimental-strip-types oxlint src --deny-warnings && NODE_OPTIONS=--experimental-strip-types eslint \"src/**/*.vue\" --max-warnings 0",
     "writer": "node --experimental-strip-types scripts/writer-cli.ts",
     "test:writer": "node --experimental-strip-types --test tests/writer-cli.integration.ts",
-    "browser": "playwright cli"
+    "browser": "playwright cli",
+    "format": "oxfmt --write . --disable-nested-config",
+    "format:check": "oxfmt --check . --disable-nested-config"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.0",
@@ -47,6 +49,7 @@
     "axe-core": "4.13.0",
     "eslint": "10.9.1",
     "eslint-plugin-vue": "10.10.0",
+    "oxfmt": "0.71.0",
     "oxlint": "1.80.0",
     "playwright-bdd": "9.2.0",
     "tailwindcss": "^4.3.3",

@@ -15,14 +15,16 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  ...(runDirectory ? {
-    outputDir: join(runDirectory, 'results'),
-    reporter: [
-      ['list'],
-      ['json', { outputFile: join(runDirectory, 'report.json') }],
-      ['html', { outputFolder: join(runDirectory, 'html'), open: 'never' }],
-    ] as import('@playwright/test').ReporterDescription[],
-  } : {}),
+  ...(runDirectory
+    ? {
+        outputDir: join(runDirectory, 'results'),
+        reporter: [
+          ['list'],
+          ['json', { outputFile: join(runDirectory, 'report.json') }],
+          ['html', { outputFolder: join(runDirectory, 'html'), open: 'never' }],
+        ] as import('@playwright/test').ReporterDescription[],
+      }
+    : {}),
   fullyParallel: false,
   globalTimeout: 180_000,
   timeout: 30_000,
@@ -37,10 +39,12 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
   ],
-  webServer: runDirectory ? [] : {
-    command: `pnpm preview --port ${port}`,
-    url: baseURL,
-    reuseExistingServer: false,
-    timeout: 30_000,
-  },
+  webServer: runDirectory
+    ? []
+    : {
+        command: `pnpm preview --port ${port}`,
+        url: baseURL,
+        reuseExistingServer: false,
+        timeout: 30_000,
+      },
 })

@@ -47,8 +47,7 @@ export function createQueryAtom<A>(
     void read()
       .then(
         (value) => {
-          if (generation === current && listeners.size)
-            publish({ status: 'ready', value })
+          if (generation === current && listeners.size) publish({ status: 'ready', value })
         },
         (cause) => {
           if (generation === current && listeners.size)

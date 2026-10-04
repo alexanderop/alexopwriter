@@ -1,11 +1,18 @@
 import { z } from 'zod'
 import { CAPTION_MODEL } from './modelAssets'
 const tokenizerSchema = z.object({ model: z.object({ type: z.string() }).loose() }).loose()
-const tokenizerConfigSchema = z.object({ tokenizer_class: z.enum(['GPT2Tokenizer', 'GPT2TokenizerFast']) }).loose()
+const tokenizerConfigSchema = z
+  .object({ tokenizer_class: z.enum(['GPT2Tokenizer', 'GPT2TokenizerFast']) })
+  .loose()
 const processorSchema = z.object({ image_seq_len: z.number().int().positive() }).loose()
-const imageConfigSchema = z.object({ image_processor_type: z.literal('Idefics3ImageProcessor') }).loose()
-export async function loadCaptionFiles(localOnly: boolean, options?: { cache: Pick<Cache, 'match' | 'put'>; fetchFile: (url: string) => Promise<Response> }) {
-  const cache = options?.cache ?? await caches.open('transformers-cache')
+const imageConfigSchema = z
+  .object({ image_processor_type: z.literal('Idefics3ImageProcessor') })
+  .loose()
+export async function loadCaptionFiles(
+  localOnly: boolean,
+  options?: { cache: Pick<Cache, 'match' | 'put'>; fetchFile: (url: string) => Promise<Response> },
+) {
+  const cache = options?.cache ?? (await caches.open('transformers-cache'))
   const fetchFile = options?.fetchFile ?? ((url: string) => fetch(url))
   async function json<T>(file: string, schema: z.ZodType<T>): Promise<T> {
     const url = `https://huggingface.co/${CAPTION_MODEL.id}/resolve/${CAPTION_MODEL.revision}/${file}`
@@ -14,9 +21,11 @@ export async function loadCaptionFiles(localOnly: boolean, options?: { cache: Pi
       const parsed = schema.safeParse(await cached.json().catch(() => undefined))
       if (parsed.success) return parsed.data
     }
-    if (localOnly) throw new Error('Image model files are missing. Download them again in Settings.')
+    if (localOnly)
+      throw new Error('Image model files are missing. Download them again in Settings.')
     const response = await fetchFile(url)
-    if (!response.ok) throw new Error(`Could not download image model configuration: HTTP ${response.status}`)
+    if (!response.ok)
+      throw new Error(`Could not download image model configuration: HTTP ${response.status}`)
     const result = schema.parse(await response.clone().json())
     await cache.put(url, response)
     return result

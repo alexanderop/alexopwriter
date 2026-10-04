@@ -3,7 +3,8 @@ import { createBdd } from 'playwright-bdd'
 import { test } from './fixtures'
 
 const { Given, When, Then } = createBdd(test)
-const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
+const png =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
 const source = `data:image/png;base64,${png}`
 
 Given('I open an empty image writing workspace', async ({ writing }) => {

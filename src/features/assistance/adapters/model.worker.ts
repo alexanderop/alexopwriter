@@ -7,12 +7,10 @@ let generator: TextGenerationPipeline | null = null
 let busy = false
 const send = (message: WorkerResponse) => globalThis.postMessage(message)
 const instructions = {
-  shorten:
-    'Shorten this passage while preserving its meaning. Return only the rewritten passage.',
+  shorten: 'Shorten this passage while preserving its meaning. Return only the rewritten passage.',
   clarify:
     'Rewrite this passage clearly using simple language. Preserve all facts and meaning. Return only the rewritten passage.',
-  heading:
-    'Suggest one short descriptive heading for this passage. Return only the heading.',
+  heading: 'Suggest one short descriptive heading for this passage. Return only the heading.',
 } as const
 
 globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
@@ -47,8 +45,7 @@ globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
         }
         send({ type: 'ready', id: request.id })
       } else {
-        if (generator === null)
-          throw new Error('Download and enable the local model first.')
+        if (generator === null) throw new Error('Download and enable the local model first.')
         const output = await generator(
           [
             {
@@ -83,7 +80,5 @@ globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
     } finally {
       busy = false
     }
-  })().catch(() =>
-    send({ type: 'error', id: request.id, message: 'Local model failed.' }),
-  )
+  })().catch(() => send({ type: 'error', id: request.id, message: 'Local model failed.' }))
 })

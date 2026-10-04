@@ -12,15 +12,19 @@ it('publishes synchronous loader failures and can refresh afterward', async () =
     },
     (refresh) => {
       invalidate = refresh
-      return () => { released = true }
+      return () => {
+        released = true
+      }
     },
   )
   const stop = atom.subscribe(() => {})
   try {
-    await expect.poll(() => atom.snapshot()).toEqual({
-      status: 'error',
-      error: new Error('Cannot read yet'),
-    })
+    await expect
+      .poll(() => atom.snapshot())
+      .toEqual({
+        status: 'error',
+        error: new Error('Cannot read yet'),
+      })
     shouldFail = false
     invalidate?.()
     await expect.poll(() => atom.snapshot()).toEqual({ status: 'ready', value: 7 })
