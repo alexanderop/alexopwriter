@@ -631,3 +631,9 @@ progress {
   text-decoration: underline;
   font-weight: 600;
 }
+
+.embedded-image-container { display: inline-block; max-width: 100%; }
+.image-alt-action { display: block; margin: .35rem 0 .75rem; font: 11px var(--font-mono, monospace); opacity: .75; }
+.image-description label { display: block; margin: 1rem 0 .5rem; }
+.image-description textarea { width: 100%; resize: vertical; padding: .7rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: inherit; font: inherit; }
+.alt-preview { display: block; max-width: 100%; max-height: 180px; object-fit: contain; margin: 1rem 0; }

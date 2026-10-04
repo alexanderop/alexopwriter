@@ -188,3 +188,48 @@ test('returning to a document before its paste completes clears the update guard
   await expect.element(page.getByRole('img')).toBeVisible()
   expect(editor.value?.hasPendingImages()).toBe(false)
 })
+
+test('alt targets distinguish duplicate images, map preceding edits, preserve selection and undo once', async () => {
+  const { texts, editor } = await harness(encodeClipboardImages, `${markup}\n\n${markup} tail`)
+  const target = editor.value!.captureImage(markup.length + 2)!
+  editor.value!.selectRange(0, 0)
+  await userEvent.keyboard('Prefix ')
+  editor.value!.selectRange(texts.value.a!.length, texts.value.a!.length)
+  expect(editor.value!.applyImageAlt(target, 'A [lake] \\ mountain')).toBe(true)
+  expect(texts.value.a).toContain(`Prefix ${markup}\n\n![A \\[lake\\] \\\\ mountain]`)
+  await userEvent.keyboard(' end')
+  expect(texts.value.a?.endsWith(' tail end')).toBe(true)
+  await userEvent.keyboard(`{${modifier}>}z{/${modifier}}`)
+  await userEvent.keyboard(`{${modifier}>}z{/${modifier}}`)
+  expect(texts.value.a).toBe(`Prefix ${markup}\n\n${markup} tail`)
+})
+
+test('deleted targets never update another image and document switches reject stale apply', async () => {
+  const { texts, editor, id } = await harness(encodeClipboardImages, `${markup}\n\n${markup}`)
+  const target = editor.value!.captureImage(0)!
+  editor.value!.selectRange(0, markup.length)
+  await userEvent.keyboard('{Backspace}')
+  expect(editor.value!.applyImageAlt(target, 'Wrong')).toBe(false)
+  const other = editor.value!.captureImage(2)!
+  id.value = 'b'
+  await expect.element(page.getByRole('textbox')).toHaveTextContent('Second')
+  expect(editor.value!.applyImageAlt(other, 'Wrong')).toBe(false)
+  expect(texts.value.a).toBe(`\n\n${markup}`)
+})
+
+test('image edit action captures its occurrence and decorative alt stays literally empty', async () => {
+  const { editor } = await harness(encodeClipboardImages, markup)
+  await expect.element(page.getByRole('button', { name: 'Edit alt text' })).toBeVisible()
+  const target = editor.value!.captureImage(0)!
+  expect(editor.value!.applyImageAlt(target, '')).toBe(true)
+  expect(document.querySelector('.embedded-image')?.getAttribute('alt')).toBe('')
+})
+
+test('escaping an image invalidates its editable target even if its bytes stay intact', async () => {
+  const { editor, texts } = await harness(encodeClipboardImages, markup)
+  const target = editor.value!.captureImage(0)!
+  editor.value!.selectRange(0, 0)
+  await userEvent.keyboard('\\')
+  expect(editor.value!.applyImageAlt(target, 'Wrong')).toBe(false)
+  expect(texts.value.a).toBe(`\\${markup}`)
+})

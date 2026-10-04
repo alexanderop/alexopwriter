@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -25,7 +26,7 @@ import {
   FileText,
 } from '@lucide/vue'
 import { saveBeforeUpdate, type RegisterAppUpdate } from './appUpdate'
-import { embeddedImages, imageAwareWordCount } from './editor/images'
+import { embeddedImages, imageAwareWordCount, type ImageTarget } from './editor/images'
 import DocumentEditor from './components/DocumentEditor.vue'
 import type { SelectionTarget } from './components/DocumentEditor.vue'
 import { createWorkspace } from './documents/workspace'
@@ -72,7 +73,32 @@ watch([dark, vimEnabled], () => {
   }
 })
 const mode = ref('NORMAL')
-const panel = ref<'review' | 'assist' | null>(null)
+const panel = ref<'review' | 'assist' | 'image' | null>(null)
+const imageTarget = shallowRef<ImageTarget | null>(null)
+const altDraft = ref('')
+const altInput = useTemplateRef<HTMLTextAreaElement>('altInput')
+function closeImage() {
+  if (imageTarget.value) editor.value?.releaseImage(imageTarget.value)
+  imageTarget.value = null
+  if (panel.value === 'image') panel.value = null
+  editor.value?.focus()
+}
+function openImage(target: ImageTarget) {
+  if (imageTarget.value) editor.value?.releaseImage(imageTarget.value)
+  imageTarget.value = target
+  altDraft.value = target.alt
+  panel.value = 'image'
+  void nextTick(() => altInput.value?.focus())
+}
+function applyAlt() {
+  if (!imageTarget.value) return
+  if (!editor.value?.applyImageAlt(imageTarget.value, altDraft.value)) {
+    notice.value = 'This image changed. Select it again to edit its alt text.'
+    closeImage()
+    return
+  }
+  closeImage()
+}
 const selected = ref(false)
 const notice = ref('')
 const proposal = shallowRef<{ target: SelectionTarget; text: string } | null>(
@@ -91,6 +117,7 @@ let requestEpoch = 0
 watch(
   () => state.value.activeId,
   () => {
+    if (imageTarget.value) closeImage()
     requestEpoch += 1
     proposal.value = null
     notice.value = ''
@@ -212,6 +239,7 @@ function activateDocument(id: string) {
   proposal.value = null
 }
 function togglePanel(next: 'review' | 'assist') {
+  if (imageTarget.value) closeImage()
   panel.value = panel.value === next ? null : next
 }
 function changed(id: string, text: string) {
@@ -428,6 +456,7 @@ async function removeModel() {
             @error="reportError"
             @mode="mode = $event"
             @selection="selected = $event"
+            @image="openImage"
           />
         </div>
         <div v-else class="empty-state">
@@ -443,22 +472,35 @@ async function removeModel() {
         v-if="panel"
         class="review-panel"
         :aria-label="
-          panel === 'review' ? 'Writing review' : 'Local writing help'
+          panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Local writing help'
         "
       >
         <div class="panel-header">
           <h2>
-            {{ panel === 'review' ? 'Writing review' : 'Writing help' }}
+            {{ panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Writing help' }}
           </h2>
           <button
             class="icon-button"
             aria-label="Close panel"
-            @click="panel = null"
+            @click="panel === 'image' ? closeImage() : panel = null"
           >
             <X :size="17" />
           </button>
         </div>
-        <template v-if="panel === 'review'">
+        <template v-if="panel === 'image' && imageTarget">
+          <section class="image-description" @keydown.esc.stop="closeImage">
+            <img :src="imageTarget.url" :alt="imageTarget.alt" class="alt-preview" />
+            <p class="panel-description">Describe what matters about this image in your document.</p>
+            <label for="image-alt">Alt text</label>
+            <textarea id="image-alt" ref="altInput" v-model="altDraft" rows="5" />
+            <p class="panel-description">Leave empty for a decorative image.</p>
+            <div class="proposal-actions">
+              <button class="primary-button" @click="applyAlt">Apply alt text</button>
+              <button @click="closeImage">Cancel</button>
+            </div>
+          </section>
+        </template>
+        <template v-else-if="panel === 'review'">
           <p class="panel-description">
             Small suggestions. Your voice stays yours.
           </p>
