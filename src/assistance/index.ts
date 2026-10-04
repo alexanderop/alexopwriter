@@ -1,3 +1,5 @@
 export type { LocalAssistant, AssistantState, WritingAction } from './domain/assistant'
 export { MODEL_INFO } from './domain/modelInfo'
 export { checkWriting, type WritingIssue } from './domain/review'
+export type { CaptionState, ImageCaption } from './domain/imageCaption'
+export type { ModelFiles } from './domain/modelFiles'

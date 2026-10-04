@@ -114,7 +114,7 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
         updatedAt: now(),
         ...(doc.parent ? { parent: doc.parent } : {}),
       }
-      
+
       try {
         await recovery.put(record)
         doc.recoveredRevision = revision

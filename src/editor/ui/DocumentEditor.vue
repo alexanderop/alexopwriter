@@ -16,8 +16,8 @@ import {
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { Vim, getCM, vim } from '@replit/codemirror-vim'
-import { clipboardImages, encodeClipboardImages } from '../images'
-import { addImagePaste, removeImagePaste, pendingImagePastes, imageWidgets } from '../imageExtensions'
+import { clipboardImages, encodeClipboardImages, embeddedImages, imageMarkdown, type ImageTarget } from '../images'
+import { addImagePaste, removeImagePaste, pendingImagePastes, imageWidgets, imageEditAction, imageTargets, addImageTarget, removeImageTarget } from '../imageExtensions'
 import { markdownHighlight } from '../markdown.ts'
 
 import type { SelectionTarget } from '../ports'
@@ -29,6 +29,7 @@ const props = defineProps<{
   encodeImages?: (files: readonly File[]) => Promise<string>
 }>()
 const emit = defineEmits<{
+  image: [target: ImageTarget]
   error: [error: Error]
   change: [id: string, text: string]
   mode: [mode: string]
@@ -59,7 +60,9 @@ function makeState(text: string) {
       drawSelection(),
       markdown(),
       pendingImagePastes,
+      imageTargets,
       imageWidgets,
+      imageEditAction.of((position) => { const target = captureImage(position); if (target) emit('image', target) }),
       syntaxHighlighting(markdownHighlight),
       EditorView.lineWrapping,
       placeholder('Start writing. This space is yours.'),
@@ -165,6 +168,34 @@ function pasteImages(event: ClipboardEvent): boolean {
   })
   return true
 }
+function captureImage(position: number): ImageTarget | null {
+  if (!view) return null
+  const image = embeddedImages(view.state.doc.toString()).find((item) => item.from === position)
+  if (!image) return null
+  const id = Symbol('image target')
+  view.dispatch({ effects: addImageTarget.of({ id, from: image.from, to: image.to }) })
+  return { id, documentId: currentId, original: view.state.doc.sliceString(image.from, image.to), url: image.url, alt: image.alt }
+}
+function releaseImage(target: ImageTarget) {
+  if (!view) return
+  if (target.documentId === currentId) view.dispatch({ effects: removeImageTarget.of(target.id) })
+  else {
+    const state = states.get(target.documentId)
+    if (state) states.set(target.documentId, state.update({ effects: removeImageTarget.of(target.id) }).state)
+  }
+}
+function applyImageAlt(target: ImageTarget, alt: string): boolean {
+  if (!view || target.documentId !== currentId) return false
+  const mapped = view.state.field(imageTargets).get(target.id)
+  if (!mapped || view.state.doc.sliceString(mapped.from, mapped.to) !== target.original) return false
+  if (!embeddedImages(view.state.doc.toString()).some((image) => image.from === mapped.from && image.to === mapped.to && image.url === target.url)) return false
+  view.dispatch({
+    changes: { from: mapped.from, to: mapped.to, insert: imageMarkdown(alt, target.url) },
+    effects: removeImageTarget.of(target.id),
+    annotations: isolateHistory.of('full'),
+  })
+  return true
+}
 function captureSelection(): SelectionTarget | null {
   if (!view) return null
   const { from, to, empty } = view.state.selection.main
@@ -202,7 +233,15 @@ function selectRange(from: number, to: number): SelectionTarget | null {
   view.focus()
   return captureSelection()
 }
+function hasPendingImages(): boolean {
+  return Boolean(view?.state.field(pendingImagePastes).size) ||
+    [...states.entries()].some(([id, state]) => id !== currentId && state.field(pendingImagePastes).size > 0)
+}
 defineExpose({
+  captureImage,
+  releaseImage,
+  applyImageAlt,
+  hasPendingImages,
   captureSelection,
   applyReplacement,
   selectRange,

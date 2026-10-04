@@ -1,48 +1,43 @@
-import { readFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
-import { createBdd, test } from 'playwright-bdd'
+import { createBdd } from 'playwright-bdd'
+import { test } from './fixtures'
+
 const { Given, When, Then } = createBdd(test)
 const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
 const source = `data:image/png;base64,${png}`
 
-Given('I open an empty image writing workspace', async ({ page }) => {
-  await page.goto('./')
-  await expect(page.getByRole('textbox', { name: 'Document editor' })).toBeVisible()
-  if (await page.getByRole('button', { name: 'Vim mode' }).getAttribute('aria-pressed') === 'true')
-    await page.getByRole('button', { name: 'Vim mode' }).click()
+Given('I open an empty image writing workspace', async ({ writing }) => {
+  await writing.primary.open()
+  await writing.primary.setPreference('Vim mode', false)
 })
-When('I paste a copied image into my document', async ({ page }) => {
-  await page.getByRole('textbox', { name: 'Document editor' }).focus()
-  await page.getByRole('textbox', { name: 'Document editor' }).evaluate((editor, bytes) => {
-    const image = new File([Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0))], 'copied.png', { type: 'image/png' })
-    const event = new Event('paste', { bubbles: true, cancelable: true })
-    Object.defineProperty(event, 'clipboardData', { value: { files: [image] } })
-    editor.dispatchEvent(event)
-    if (!event.defaultPrevented) throw new Error('The editor did not accept the image paste')
-  }, png)
+When('I paste a copied image into my document', async ({ writing }) => {
+  await writing.images.pastePng(png)
 })
-Then('the pasted image is displayed and saved in browser recovery', async ({ page }) => {
-  await expect(page.getByRole('img', { name: 'Pasted image' })).toBeVisible()
-  await expect(page.getByText('Draft saved in browser', { exact: true })).toBeVisible()
-  await expect(page.getByText('0 words', { exact: true })).toBeVisible()
+Then('the pasted image is displayed and saved in browser recovery', async ({ writing }) => {
+  await writing.images.expectVisible('Pasted image')
+  await writing.primary.expectSaved()
+  await writing.primary.expectWordCount(0)
 })
-When('I reload the image writing workspace', async ({ page }) => { await page.reload() })
-Then('the recovered image is displayed', async ({ page }) => {
-  await expect(page.getByRole('img', { name: 'Pasted image' })).toHaveAttribute('src', source)
-  await expect.poll(() => page.getByRole('img', { name: 'Pasted image' }).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1)
+When('I reload the image writing workspace', async ({ writing }) => {
+  await writing.primary.reload()
 })
-When('I download and reimport the illustrated document', async ({ page }) => {
-  const pending = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Download copy' }).click()
-  const download = await pending
-  const path = await download.path()
-  expect(path).not.toBeNull()
-  const bytes = await readFile(path!)
-  expect(bytes.toString('utf8')).toBe(`![Pasted image](${source})`)
-  await page.getByLabel('Import document').setInputFiles({ name: 'Illustrated.md', mimeType: 'text/markdown', buffer: bytes })
+Then('the recovered image is displayed', async ({ writing }) => {
+  await writing.images.expectSource('Pasted image', source, 1)
 })
-Then('the imported image has the original bytes', async ({ page }) => {
-  await expect(page.getByRole('textbox', { name: 'Document name' })).toHaveValue('Illustrated.md')
-  await expect(page.getByRole('img', { name: 'Pasted image' })).toHaveAttribute('src', source)
-  await expect.poll(() => page.getByRole('img', { name: 'Pasted image' }).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1)
+When('I download and reimport the illustrated document', async ({ writing }) => {
+  const download = await writing.primary.downloadCopy()
+  expect(download.bytes.toString('utf8')).toBe(`![Pasted image](${source})`)
+  await writing.primary.importFile({ name: 'Illustrated.md', bytes: download.bytes })
+})
+Then('the imported image has the original bytes', async ({ writing }) => {
+  await writing.images.expectSource('Pasted image', source, 1)
+})
+
+When('I describe the image manually', async ({ writing }) => {
+  await writing.images.describeManually('A [red] pixel \\ sample')
+})
+Then('my image description is recovered and included in the download', async ({ writing }) => {
+  await writing.images.expectDescription('A [red] pixel \\ sample')
+  const download = await writing.primary.downloadCopy()
+  expect(download.bytes.toString('utf8')).toBe(`![A \\[red\\] pixel \\\\ sample](${source})`)
 })

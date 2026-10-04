@@ -13,4 +13,3 @@ export type LocalAssistant = {
   remove(): Promise<void>
   dispose(): void
 }
-

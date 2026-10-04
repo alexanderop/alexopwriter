@@ -10,3 +10,5 @@ verification-artifacts/
 .DS_Store
 
 .audit/
+
+.playwright-cli/

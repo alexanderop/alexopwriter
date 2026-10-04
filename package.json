@@ -16,7 +16,10 @@
     "test:model": "playwright test --config playwright.model.config.ts",
     "lint": "pnpm check:architecture && oxlint . --deny-warnings --report-unused-disable-directives && eslint \"src/**/*.vue\" --max-warnings 0",
     "test:compat": "bddgen && playwright test",
-    "check:architecture": "node --experimental-strip-types tooling/checkArchitecture.ts"
+    "check:architecture": "node --experimental-strip-types tooling/checkArchitecture.ts",
+    "writer": "node --experimental-strip-types scripts/writer-cli.ts",
+    "test:writer": "node --experimental-strip-types --test tests/writer-cli.integration.ts",
+    "browser": "playwright cli"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.0",
@@ -31,7 +34,8 @@
     "onnxruntime-web": "1.31.0-dev.20260914-8d85527a0",
     "vue": "3.5.42",
     "zod": "4.5.2",
-    "@lezer/highlight": "1.2.3"
+    "@lezer/highlight": "1.2.3",
+    "workbox-window": "7.4.1"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

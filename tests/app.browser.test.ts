@@ -1,3 +1,4 @@
+import { createTestServices } from './support/services'
 import { afterEach, beforeEach, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
@@ -88,7 +89,7 @@ test.each([false, true])('the connected suggestion workflow reports acceptance a
   const { testWorkspace } = await import('./support/workspace')
   const { controlledAssistant } = await import('./support/controlledAssistant')
   const control = controlledAssistant()
-  await render(App, { props: { services: { workspace: testWorkspace(), assistant: control.assistant } } })
+  await render(App, { props: { services: createTestServices({ workspace: testWorkspace(), assistant: control.assistant }) } })
   const editor = page.getByRole('textbox', { name: 'Document editor' })
   await editor.fill('An original passage.')
   const modifier = navigator.platform.includes('Mac') ? 'Meta' : 'Control'
@@ -119,7 +120,7 @@ test('switching documents rejects late suggestions through the real application 
   const { testWorkspace } = await import('./support/workspace')
   const { controlledAssistant } = await import('./support/controlledAssistant')
   const control = controlledAssistant()
-  await render(App, { props: { services: { workspace: testWorkspace(), assistant: control.assistant } } })
+  await render(App, { props: { services: createTestServices({ workspace: testWorkspace(), assistant: control.assistant }) } })
   const editor = page.getByRole('textbox', { name: 'Document editor' })
   await editor.fill('Keep my passage.')
   const modifier = navigator.platform.includes('Mac') ? 'Meta' : 'Control'
@@ -134,4 +135,74 @@ test('switching documents rejects late suggestions through the real application 
   await expect.element(page.getByRole('button', { name: 'Accept', exact: true })).not.toBeInTheDocument()
   await expect.element(editor).toHaveTextContent('Start writing. This space is yours.')
   expect(control.cancellations()).toBe(1)
+})
+
+test('a waiting update is visible and another tab activating it does not reload this draft', async () => {
+  let activated: (() => void) | undefined
+  await render(App, {
+    props: {
+      services: createBrowserServices(),
+      registerUpdates(callbacks) {
+        callbacks.onNeedRefresh()
+        activated = callbacks.onNeedReload
+        return async () => {}
+      },
+    },
+  })
+  const editor = page.getByRole('textbox', { name: 'Document editor' })
+  await editor.fill('Keep writing while another tab updates.')
+  activated?.()
+  await expect.element(page.getByRole('button', { name: 'Update app' })).toBeVisible()
+  await expect.element(editor).toHaveTextContent('Keep writing while another tab updates.')
+})
+
+test('image suggestions stay editable until Apply, persist, and undo as one change', async () => {
+  const { createImageCaption } = await import('../src/assistance/adapters/imageCaption')
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
+  const source = `data:image/png;base64,${png}`
+  let resolve: (text: string) => void = () => undefined
+  const caption = createImageCaption({ inspect: async () => 'available' })
+  const capability = { ...caption, describe: () => new Promise<string>((finish) => { resolve = finish }) }
+  await render(App, { props: { services: { ...createTestServices(), captions: capability } } })
+  const editor = page.getByRole('textbox', { name: 'Document editor' })
+  await editor.fill(`![Original](${source})`)
+  await page.getByRole('button', { name: 'Edit alt text', exact: true }).click()
+  await page.getByRole('button', { name: 'Generate alt text', exact: true }).click()
+  resolve('A lake.')
+  const alt = page.getByRole('textbox', { name: 'Alt text', exact: true })
+  await expect.element(alt).toHaveValue('A lake.')
+  expect(document.querySelector('.document-editor img.embedded-image')?.getAttribute('alt')).toBe('Original')
+  await alt.fill('A quiet [lake].')
+  await page.getByRole('button', { name: 'Apply alt text', exact: true }).click()
+  expect(document.querySelector('.document-editor img.embedded-image')?.getAttribute('alt')).toBe('A quiet [lake].')
+  const modifier = navigator.platform.includes('Mac') ? 'Meta' : 'Control'
+  await userEvent.keyboard(`{${modifier}>}z{/${modifier}}`)
+  expect(document.querySelector('.document-editor img.embedded-image')?.getAttribute('alt')).toBe('Original')
+})
+
+test('late generation keeps newer manual text and cannot re-open an abandoned image editor', async () => {
+  const { createImageCaption } = await import('../src/assistance/adapters/imageCaption')
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
+  let resolve: (text: string) => void = () => undefined
+  const caption = createImageCaption({ inspect: async () => 'available' })
+  await render(App, { props: { services: { ...createTestServices(), captions: { ...caption, describe: () => new Promise<string>((finish) => { resolve = finish }) } } } })
+  await page.getByRole('textbox', { name: 'Document editor' }).fill(`![Original](data:image/png;base64,${png})`)
+  await page.getByRole('button', { name: 'Edit alt text', exact: true }).click()
+  await page.getByRole('button', { name: 'Generate alt text', exact: true }).click()
+  const alt = page.getByRole('textbox', { name: 'Alt text', exact: true })
+  await alt.fill('My manual edit')
+  resolve('Late model text')
+  await expect.element(page.getByText('Your alt text changed while generating. Kept your edit; generate again if needed.')).toBeVisible()
+  await expect.element(alt).toHaveValue('My manual edit')
+  await page.getByRole('button', { name: 'Generate alt text', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  resolve('Abandoned text')
+  await expect.element(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  await expect.element(alt).not.toBeInTheDocument()
+  await page.getByRole('button', { name: 'Close panel' }).click()
+  await expect.element(page.getByRole('button', { name: 'Settings', exact: true })).toHaveFocus()
+  await page.getByRole('button', { name: 'Edit alt text', exact: true }).click()
+  await expect.element(alt).toHaveValue('Original')
+  await userEvent.keyboard('{Escape}')
+  await expect.element(page.getByRole('button', { name: 'Edit alt text', exact: true })).toHaveFocus()
 })

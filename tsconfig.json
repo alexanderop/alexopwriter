@@ -26,6 +26,7 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "*.config.ts",
-    "tooling/**/*.ts"
+    "tooling/**/*.ts",
+    "scripts/**/*.ts"
   ]
 }

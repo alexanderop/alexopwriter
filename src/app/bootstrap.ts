@@ -1,3 +1,6 @@
+import type { ImageCaption, ModelFiles } from '../assistance'
+import { createImageCaption } from '../assistance/adapters/imageCaption'
+import { inspectModelFiles } from '../assistance/adapters/modelAssets'
 import type { Workspace } from '../documents'
 import type { LocalAssistant } from '../assistance'
 import { createLocalAssistant, removeModelCache } from '../assistance/adapters/localAssistant'
@@ -23,10 +26,14 @@ export function createBrowserWorkspace() {
 export type WriterServices = {
   readonly workspace: Workspace
   readonly assistant: LocalAssistant
+  readonly captions: ImageCaption
+  readonly inspectWritingFiles: () => Promise<ModelFiles>
 }
 export function createBrowserServices(): WriterServices {
   return {
     workspace: createBrowserWorkspace(),
+    captions: createImageCaption(),
+    inspectWritingFiles: () => inspectModelFiles('writing'),
     assistant: createLocalAssistant({
       createWorker: () => new Worker(new URL('../assistance/adapters/model.worker.ts', import.meta.url), { type: 'module' }),
       removeCache: removeModelCache,

@@ -45,12 +45,13 @@ test('a downloaded local model proposes an undoable heading and reloads offline'
   await editor.fill(original)
   await editor.press('ControlOrMeta+a')
   await page
-    .getByRole('button', { name: 'Local writing help', exact: true })
+    .getByRole('button', { name: 'Settings', exact: true })
     .click()
   await page
-    .getByRole('button', { name: 'Download & enable', exact: true })
+    .getByRole('button', { name: /Download & enable|Enable writing model/ })
     .click()
   await waitForModel(page, 540_000)
+  await page.getByRole('button', { name: 'Local writing help', exact: true }).click()
   await page
     .getByRole('button', { name: 'Suggest a heading', exact: true })
     .click()
@@ -88,12 +89,13 @@ test('a downloaded local model proposes an undoable heading and reloads offline'
   await page.reload()
   await expect(editor).toHaveText(original)
   await page
-    .getByRole('button', { name: 'Local writing help', exact: true })
+    .getByRole('button', { name: 'Settings', exact: true })
     .click()
   await page
-    .getByRole('button', { name: 'Download & enable', exact: true })
+    .getByRole('button', { name: /Download & enable|Enable writing model/ })
     .click()
   await waitForModel(page, 120_000)
+  await page.getByRole('button', { name: 'Local writing help', exact: true }).click()
   await editor.click()
   await editor.press('ControlOrMeta+a')
   await page
