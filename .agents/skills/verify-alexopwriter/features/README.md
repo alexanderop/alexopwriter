@@ -13,3 +13,5 @@ Proof lives in the printed `verification-artifacts/run-*/` directory after clean
 | [Editing](editing.md) | Keyboard selection, undo/redo, review corrections, preferences, and optional help remain usable. |
 
 The map describes current scenario coverage. When a user-facing entry point changes, update its scenario, shared page object, and map together. Each feature file uses the same four sections so later maintenance can compare entry points with proof.
+
+If the behavior has no mapped scenario, use the [Playwright CLI exploration workflow](../references/exploration.md). Record the exploratory result separately from automated suite results.

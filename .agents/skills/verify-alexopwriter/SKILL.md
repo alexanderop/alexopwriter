@@ -1,11 +1,11 @@
 ---
 name: verify-alexopwriter
-description: Verify alexopwriter's browser writing, recovery, offline use, and file portability through the same Playwright scenarios and page objects as its end-to-end tests.
+description: Verify alexopwriter through shared Playwright end-to-end scenarios, or explore untested browser behavior with the real Playwright CLI and retained evidence.
 ---
 
 # Verify alexopwriter
 
-Use the repository root as the working directory. Read the [feature map](features/README.md), then the relevant feature recipe. This skill drives the production web app; no account, backend, or model download is needed.
+Use the repository root as the working directory. Read the [feature map](features/README.md), then the relevant feature recipe. For behavior without an existing scenario, use the [Playwright CLI exploration workflow](references/exploration.md). This skill drives the production web app; no account, backend, or model download is needed.
 
 ## Launch
 
@@ -19,22 +19,26 @@ Use `--headed` to watch, `--browser firefox` for Firefox (default: Chromium), or
 
 ## Drive
 
+Choose `pnpm writer verify` for existing automated coverage. Choose `pnpm browser` for interactive investigation, untested flows, or viewport checks. It exposes the real Playwright CLI already included in the pinned dependency. Run `pnpm browser --help` and follow [Exploration](references/exploration.md) for owned sessions, evidence, and cleanup. Free-form exploration does not need a pre-existing page object; promote useful regression checks into the shared suite afterward.
+
 `pnpm writer list` lists the five mapped groups. `pnpm writer verify all` runs all groups. For machine-readable stdout use `pnpm --silent writer verify recovery --json`; progress goes to stderr and the final JSON names the evidence directory.
 
-The CLI selects tagged [writer scenarios](../../../tests/e2e/writer.feature) and [image scenarios](../../../tests/e2e/images.feature). Both ordinary E2E tests and verification use the same [WriterPage](../../../tests/e2e/pages/WriterPage.ts) and [ImagePage](../../../tests/e2e/pages/ImagePage.ts). Add new behavior there and in its scenario instead of introducing a second set of selectors in this skill or CLI. Use visible controls and browser events; do not seed Vue, CodeMirror, or IndexedDB internals.
+The CLI selects tagged [writer scenarios](../../../tests/e2e/writer.feature) and [image scenarios](../../../tests/e2e/images.feature). Both ordinary E2E tests and verification use the same [WriterPage](../../../tests/e2e/pages/WriterPage.ts) and [ImagePage](../../../tests/e2e/pages/ImagePage.ts). Keep maintained automated scenarios and selectors in those files. Exploratory CLI actions may use fresh snapshots; do not turn them into a second maintained test suite. Use visible controls and browser events; do not seed Vue, CodeMirror, or IndexedDB internals.
 
 ## Evidence
 
-Every run prints an absolute path to `verification-artifacts/run-*/summary.json`. It records feature, browser, base path, timestamps, counts, outcome, and artifact paths. Retained evidence includes `doctor.json`, `commands.log`, `report.json`, `html/index.html`, and `results/` with traces, screenshots, and scenario attachments such as downloaded Markdown.
+Every automated writer verification run prints an absolute path to `verification-artifacts/run-*/summary.json`. It records feature, browser, base path, timestamps, counts, outcome, and artifact paths. Retained evidence includes `doctor.json`, `commands.log`, `report.json`, `html/index.html`, and `results/` with traces, screenshots, and scenario attachments such as downloaded Markdown.
 
-Require exit code zero and `status: passed`, with at least one passed scenario and no failed, skipped, or flaky scenarios. Inspect the report and relevant traces: a final screenshot alone does not prove the action. Download scenarios compare filenames and bytes; recovery scenarios observe content after reload or in another tab. Report the selected feature and browser, observed outcomes, and concrete evidence paths. A failed build or missing browser is an unsuccessful attempt, not behavior proof.
+For automated runs, require exit code zero and `status: passed`, with at least one passed scenario and no failed, skipped, or flaky scenarios. Inspect the report and relevant traces: a final screenshot alone does not prove the action. Download scenarios compare filenames and bytes; recovery scenarios observe content after reload or in another tab. Report the selected feature and browser, observed outcomes, and concrete evidence paths. A failed build or missing browser is an unsuccessful attempt, not behavior proof.
 
 Image paste uses a synthetic browser paste event; it does not prove OS clipboard integration. Native file-permission dialogs and original-file overwrites are outside these journeys. Real model inference remains the separate, opt-in `pnpm test:model` workflow; do not claim it from `verify all`.
 
 ## Cleanup
 
-Normal completion, failure, and handled interruption stop processes owned by the run, close browser contexts, and remove only its temporary `build/` and `generated/` directories. Retain the entire evidence directory. After a run, confirm its summary and relevant trace/download files still exist and its recorded loopback port is no longer serving. If abnormal termination leaves a process, identify the process belonging to that run before stopping it; never kill by process name or stop a user's existing server.
+For automated runs, normal completion, failure, and handled interruption stop processes owned by the run, close browser contexts, and remove only its temporary `build/` and `generated/` directories. Retain the entire evidence directory. After a run, confirm its summary and relevant trace/download files still exist and its recorded loopback port is no longer serving. If abnormal termination leaves a process, identify the process belonging to that run before stopping it; never kill by process name or stop a user's existing server.
+
+For exploratory runs, explicitly close the named browser session and stop your preview terminal as described in [Exploration](references/exploration.md).
 
 ## Helpers
 
-The shared helper is [scripts/writer-cli.ts](../../../scripts/writer-cli.ts), invoked through `pnpm writer`; `pnpm writer --help` shows its interface. No skill-specific browser driver is needed. Keep the feature map aligned with the scenarios; the explicitly invoked aop-mode `maintain-verification-skill` workflow can guide later upkeep when available.
+The shared helper is [scripts/writer-cli.ts](../../../scripts/writer-cli.ts), invoked through `pnpm writer`; `pnpm writer --help` shows its interface. The `pnpm browser` command exposes Playwright CLI directly, without a custom action wrapper. Keep the feature map aligned with the scenarios; the explicitly invoked aop-mode `maintain-verification-skill` workflow can guide later upkeep when available.
