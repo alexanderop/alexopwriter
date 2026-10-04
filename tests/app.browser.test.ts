@@ -82,3 +82,21 @@ test('Markdown formats as it is typed without changing the editable source', asy
   await expect.poll(() => style('.fs-md-h1').fontSize).toBe('30.6px')
   expect(editor.element().textContent).toBe(source.replaceAll('\n', ''))
 })
+
+test('a waiting update is visible and another tab activating it does not reload this draft', async () => {
+  let activated: (() => void) | undefined
+  await render(App, {
+    props: {
+      registerUpdates(callbacks) {
+        callbacks.onNeedRefresh()
+        activated = callbacks.onNeedReload
+        return async () => {}
+      },
+    },
+  })
+  const editor = page.getByRole('textbox', { name: 'Document editor' })
+  await editor.fill('Keep writing while another tab updates.')
+  activated?.()
+  await expect.element(page.getByRole('button', { name: 'Update app' })).toBeVisible()
+  await expect.element(editor).toHaveTextContent('Keep writing while another tab updates.')
+})
