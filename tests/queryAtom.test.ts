@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createQueryAtom, type QueryState } from '../src/storage/queryAtom'
+import { createQueryAtom, type QueryState } from '../src/shared/storage/queryAtom'
 
 it('publishes synchronous loader failures and can refresh afterward', async () => {
   let shouldFail = true

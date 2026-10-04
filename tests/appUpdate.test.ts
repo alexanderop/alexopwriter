@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { saveBeforeUpdate } from '../src/app/application/appUpdate'
 import { testWorkspace as createWorkspace } from './support/workspace'
-import type { RecoveryRecord, RecoveryStore } from '../src/documents'
+import type { RecoveryRecord, RecoveryStore } from '../src/features/documents'
 
 function setup(put: RecoveryStore['put']) {
   return createWorkspace({

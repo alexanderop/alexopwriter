@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 import { z } from 'zod'
-import { createIndexedDbStore } from '../src/storage/indexedDb'
-import { useQueryAtom } from '../src/storage/useQueryAtom'
-import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { createIndexedDbStore } from '../src/shared/storage/indexedDb'
+import { useQueryAtom } from '../src/shared/storage/useQueryAtom'
+import { indexedDbRecovery } from '../src/features/documents/adapters/indexedDbRecovery'
 import { deleteDatabase } from './helpers/indexedDb'
 
 const schema = z.object({ id: z.string(), value: z.number() })

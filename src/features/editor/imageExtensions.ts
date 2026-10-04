@@ -1,3 +1,4 @@
+import { buttonClasses } from '../../shared/ui/button'
 import { EditorState, Facet, StateEffect, StateField, type StateEffectType } from '@codemirror/state'
 import { Decoration, EditorView, WidgetType } from '@codemirror/view'
 import { embeddedImages } from './images'
@@ -54,7 +55,7 @@ class ImageWidget extends WidgetType {
     wrapper.className = 'embedded-image-container'
     const button = document.createElement('button')
     button.type = 'button'
-    button.className = 'image-alt-action'
+    button.className = `${buttonClasses('text')} image-alt-action`
     button.textContent = 'Edit alt text'
     button.addEventListener('click', () => {
       const position = view.posAtDOM(wrapper)

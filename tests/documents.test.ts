@@ -1,8 +1,8 @@
 import { memoryRecovery } from './support/workspace'
 import { describe, expect, it } from 'vitest'
 import { testWorkspace as createWorkspace } from './support/workspace'
-import type { DiskBinding, FileAccess } from '../src/documents'
-import type { RecoveryRecord, RecoveryStore } from '../src/documents'
+import type { DiskBinding, FileAccess } from '../src/features/documents'
+import type { RecoveryRecord, RecoveryStore } from '../src/features/documents'
 function deferred<T>() {
   let resolve: (value: T) => void = () => {
     throw new Error('Not initialized')

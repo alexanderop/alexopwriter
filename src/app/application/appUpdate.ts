@@ -1,4 +1,4 @@
-import type { Workspace } from '../../documents'
+import type { Workspace } from '../../features/documents'
 
 export type RegisterAppUpdate = (callbacks: {
   onNeedRefresh(): void

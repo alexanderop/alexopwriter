@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { deleteDatabase } from './helpers/indexedDb'
-import { browserFiles } from '../src/documents/adapters/browserFiles'
-import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { browserFiles } from '../src/features/documents/adapters/browserFiles'
+import { indexedDbRecovery } from '../src/features/documents/adapters/indexedDbRecovery'
 import { testWorkspace as createWorkspace } from './support/workspace'
 
 it('writes through the production file adapter to OPFS and preserves conflicting external bytes', async () => {

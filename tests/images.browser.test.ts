@@ -2,9 +2,9 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, ref } from 'vue'
-import { DocumentEditor } from '../src/editor/ui'
-import { encodeClipboardImages, type ImageTarget } from '../src/editor/images'
-import { browserFiles } from '../src/documents/adapters/browserFiles'
+import { DocumentEditor } from '../src/features/editor/ui'
+import { encodeClipboardImages, type ImageTarget } from '../src/features/editor/images'
+import { browserFiles } from '../src/features/documents/adapters/browserFiles'
 
 const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
 const markup = `![Pasted image](data:image/png;base64,${png})`

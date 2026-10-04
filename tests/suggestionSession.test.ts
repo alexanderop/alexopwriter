@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { createSuggestionSession } from '../src/app/application/suggestionSession'
-import type { SelectionTarget } from '../src/editor'
+import type { SelectionTarget } from '../src/features/editor'
 import { testWorkspace } from './support/workspace'
 import { controlledAssistant } from './support/controlledAssistant'
 

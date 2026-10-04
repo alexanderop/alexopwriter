@@ -1,6 +1,6 @@
 import type { RecoveryRecord } from '../domain/document'
 import type { RecoveryStore } from '../application/ports'
-import { createIndexedDbStore } from '../../storage/indexedDb'
+import { createIndexedDbStore } from '../../../shared/storage/indexedDb'
 import { z } from 'zod'
 const recordSchema = z.object({
   id: z.string(),

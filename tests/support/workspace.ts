@@ -1,4 +1,4 @@
-import { createWorkspace, type WorkspaceDependencies, type RecoveryStore, type RecoveryRecord } from '../../src/documents'
+import { createWorkspace, type WorkspaceDependencies, type RecoveryStore, type RecoveryRecord } from '../../src/features/documents'
 export function memoryRecovery(): RecoveryStore {
   const rows = new Map<string, RecoveryRecord>()
   return {

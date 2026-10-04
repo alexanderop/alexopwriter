@@ -1,4 +1,4 @@
-import type { AssistantState, LocalAssistant } from '../../src/assistance'
+import type { AssistantState, LocalAssistant } from '../../src/features/assistance'
 export function controlledAssistant() {
   let state: AssistantState = { phase: 'ready', progress: 100, message: 'Ready' }
   const listeners = new Set<(state: AssistantState) => void>()

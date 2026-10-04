@@ -157,7 +157,7 @@ test('a waiting update is visible and another tab activating it does not reload 
 })
 
 test('image suggestions stay editable until Apply, persist, and undo as one change', async () => {
-  const { createImageCaption } = await import('../src/assistance/adapters/imageCaption')
+  const { createImageCaption } = await import('../src/features/assistance/adapters/imageCaption')
   const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
   const source = `data:image/png;base64,${png}`
   let resolve: (text: string) => void = () => undefined
@@ -181,7 +181,7 @@ test('image suggestions stay editable until Apply, persist, and undo as one chan
 })
 
 test('late generation keeps newer manual text and cannot re-open an abandoned image editor', async () => {
-  const { createImageCaption } = await import('../src/assistance/adapters/imageCaption')
+  const { createImageCaption } = await import('../src/features/assistance/adapters/imageCaption')
   const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
   let resolve: (text: string) => void = () => undefined
   const caption = createImageCaption({ inspect: async () => 'available' })

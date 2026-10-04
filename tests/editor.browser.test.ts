@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, ref } from 'vue'
-import { DocumentEditor } from '../src/editor/ui'
+import { DocumentEditor } from '../src/features/editor/ui'
 
 type SelectionTarget = Readonly<{
   from: number

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { manualScheduler, memoryRecovery, testWorkspace } from './support/workspace'
-import { hasUnsecuredChanges } from '../src/documents'
+import { hasUnsecuredChanges } from '../src/features/documents'
 
 it('coalesces edits and recovers the latest text through the injected scheduler', async () => {
   const scheduler = manualScheduler()

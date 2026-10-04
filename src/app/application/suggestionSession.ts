@@ -1,6 +1,6 @@
-import type { LocalAssistant, WritingAction } from '../../assistance'
-import type { EditorPort, SelectionTarget } from '../../editor'
-import type { Workspace } from '../../documents'
+import type { LocalAssistant, WritingAction } from '../../features/assistance'
+import type { EditorPort, SelectionTarget } from '../../features/editor'
+import type { Workspace } from '../../features/documents'
 
 export type SuggestionNotice =
   | { readonly kind: 'none' | 'select' | 'images' | 'changed' | 'applied' | 'stale' }

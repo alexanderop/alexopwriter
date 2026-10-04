@@ -1,11 +1,11 @@
-import { MODEL_INFO } from '../src/assistance'
+import { MODEL_INFO } from '../src/features/assistance'
 import { describe, expect, it } from 'vitest'
 import {
   createLocalAssistant,
   isModelCacheRequest,
   type AssistantWorker,
-} from '../src/assistance/adapters/localAssistant.ts'
-import type { WorkerRequest } from '../src/assistance/adapters/protocol.ts'
+} from '../src/features/assistance/adapters/localAssistant.ts'
+import type { WorkerRequest } from '../src/features/assistance/adapters/protocol.ts'
 
 function controlledWorker() {
   const requests: WorkerRequest[] = []

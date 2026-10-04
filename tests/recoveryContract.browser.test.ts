@@ -1,4 +1,4 @@
-import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { indexedDbRecovery } from '../src/features/documents/adapters/indexedDbRecovery'
 import { deleteDatabase } from './helpers/indexedDb'
 import { recoveryContract } from './support/recoveryContract'
 recoveryContract(() => {

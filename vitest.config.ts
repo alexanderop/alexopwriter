@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
@@ -14,7 +15,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [vue()],
+        plugins: [tailwindcss(), vue()],
         resolve: { dedupe: ['vue'] },
         optimizeDeps: {
           include: [

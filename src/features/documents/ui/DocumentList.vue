@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BaseButton } from '../../../shared/ui/button'
 import { Plus, FileText, FolderOpen } from '@lucide/vue'
 import type { DocumentSnapshot } from '../domain/document'
 defineProps<{ documents: readonly DocumentSnapshot[]; activeId: string | null }>()
@@ -11,30 +12,30 @@ const emit = defineEmits<{ create: []; activate: [id: string]; import: [] }>()
       >
         <div class="section-heading">
           <span>Documents</span
-          ><button
-            class="icon-button"
+          ><BaseButton
+            size="icon"
             aria-label="Create document"
             @click="emit('create')"
           >
             <Plus :size="15" />
-          </button>
+          </BaseButton>
         </div>
         <div class="document-list">
-          <button
+          <BaseButton
             v-for="document in documents"
             :key="document.id"
             class="document-item"
-            :class="{ active: document.id === activeId }"
+            :variant="document.id === activeId ? 'soft' : 'ghost'"
             :aria-current="document.id === activeId ? 'page' : undefined"
             @click="emit('activate', document.id)"
           >
             <FileText :size="15" /><span>{{ document.name }}</span
             ><span v-if="document.id === activeId" class="active-dot" />
-          </button>
+          </BaseButton>
         </div>
-        <button class="import-action" @click="emit('import')">
+        <BaseButton class="import-action" @click="emit('import')">
           <FolderOpen :size="15" />Import file
-        </button>
+        </BaseButton>
         <div class="local-note">
           <span class="local-dot" />On your device
           <p>

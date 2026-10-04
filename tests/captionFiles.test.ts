@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { loadCaptionFiles } from '../src/assistance/adapters/captionFiles'
-import { CAPTION_MODEL } from '../src/assistance/adapters/modelAssets'
+import { loadCaptionFiles } from '../src/features/assistance/adapters/captionFiles'
+import { CAPTION_MODEL } from '../src/features/assistance/adapters/modelAssets'
 function storage() {
   const responses = new Map<string, Response>()
   const cache: Pick<Cache, 'match' | 'put'> = {

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { deleteDatabase } from './helpers/indexedDb'
-import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { indexedDbRecovery } from '../src/features/documents/adapters/indexedDbRecovery'
 import { testWorkspace as createWorkspace } from './support/workspace'
 it('preserves independent tab branches in real IndexedDB and rejects older revision writes', async () => {
   const name = `alexopwriter-recovery-test-${crypto.randomUUID()}`

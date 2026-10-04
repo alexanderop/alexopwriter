@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import type { RecoveryRecord, RecoveryStore } from '../../src/documents'
+import type { RecoveryRecord, RecoveryStore } from '../../src/features/documents'
 
 export function recoveryContract(create: () => { store: RecoveryStore; cleanup: () => Promise<void> }) {
   const base: RecoveryRecord = {

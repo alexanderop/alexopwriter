@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { imageMarkdown } from '../src/editor/images'
+import { imageMarkdown } from '../src/features/editor/images'
 
 test('real local image descriptions apply, undo, persist and generate again offline', async ({ page, context }, testInfo) => {
   test.setTimeout(900_000)

@@ -1,12 +1,12 @@
-import type { ImageCaption, ModelFiles } from '../assistance'
-import { createImageCaption } from '../assistance/adapters/imageCaption'
-import { inspectModelFiles } from '../assistance/adapters/modelAssets'
-import type { Workspace } from '../documents'
-import type { LocalAssistant } from '../assistance'
-import { createLocalAssistant, removeModelCache } from '../assistance/adapters/localAssistant'
-import { createWorkspace } from '../documents'
-import { browserFiles } from '../documents/adapters/browserFiles'
-import { indexedDbRecovery } from '../documents/adapters/indexedDbRecovery'
+import type { ImageCaption, ModelFiles } from '../features/assistance'
+import { createImageCaption } from '../features/assistance/adapters/imageCaption'
+import { inspectModelFiles } from '../features/assistance/adapters/modelAssets'
+import type { Workspace } from '../features/documents'
+import type { LocalAssistant } from '../features/assistance'
+import { createLocalAssistant, removeModelCache } from '../features/assistance/adapters/localAssistant'
+import { createWorkspace } from '../features/documents'
+import { browserFiles } from '../features/documents/adapters/browserFiles'
+import { indexedDbRecovery } from '../features/documents/adapters/indexedDbRecovery'
 export function createBrowserWorkspace() {
   return createWorkspace({
     recovery: indexedDbRecovery(),
@@ -35,7 +35,7 @@ export function createBrowserServices(): WriterServices {
     captions: createImageCaption(),
     inspectWritingFiles: () => inspectModelFiles('writing'),
     assistant: createLocalAssistant({
-      createWorker: () => new Worker(new URL('../assistance/adapters/model.worker.ts', import.meta.url), { type: 'module' }),
+      createWorker: () => new Worker(new URL('../features/assistance/adapters/model.worker.ts', import.meta.url), { type: 'module' }),
       removeCache: removeModelCache,
     }),
   }

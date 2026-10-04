@@ -1,10 +1,30 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "./shared/styles/tokens.css";
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "./";
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-hover: var(--accent-hover);
+  --color-line: var(--line);
+  --color-hover: var(--hover);
+  --color-soft: var(--soft);
+  --font-system: var(--font-system);
+  --radius-control: var(--radius-control);
+}
+
+@layer base {
 :root {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  color: #1a1a1a;
-  background: #fbfaf8;
+  color: var(--ink);
+  background: var(--paper);
 }
 * {
   box-sizing: border-box;
@@ -12,67 +32,13 @@
 body {
   margin: 0;
 }
-button,
-input {
-  font: inherit;
-}
-button {
-  cursor: pointer;
-  color: inherit;
-  border: 0;
-  background: transparent;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: 5px;
-  font-size: 12px;
-  min-height: 32px;
-  padding: 6px 8px;
-  font-family: var(--font-system);
-}
-button:hover {
-  background: var(--hover);
-}
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-button:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-button svg {
-  flex-shrink: 0;
-}
 .app-shell {
-  --font-system: -apple-system, BlinkMacSystemFont, sans-serif;
-  --paper: #fbfaf8;
-  --ink: #1a1a1a;
-  --dim: #b0a99f;
-  --muted: #6b655d;
-  --accent: #3a6ea5;
-  --selection: rgb(58 110 165 / 20%);
-  --panel: color-mix(in srgb, var(--ink) 4%, var(--paper));
-  --line: color-mix(in srgb, var(--ink) 12%, transparent);
-  --hover: color-mix(in srgb, var(--ink) 7%, transparent);
-  --soft: color-mix(in srgb, var(--accent) 10%, transparent);
   background: var(--paper);
   color: var(--ink);
   height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-.app-shell.dark {
-  --paper: #17191c;
-  --ink: #c8c5be;
-  --dim: #565a60;
-  --muted: #8b867d;
-  --accent: #7aa8dd;
-  --selection: rgb(122 168 221 / 20%);
-  color-scheme: dark;
 }
 .topbar {
   min-height: 48px;
@@ -97,9 +63,6 @@ button svg {
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
-}
-.icon-button {
-  padding: 8px;
 }
 .toolbar-divider {
   height: 19px;
@@ -140,22 +103,13 @@ button svg {
   flex-direction: column;
   gap: 4px;
 }
-.document-item {
-  justify-content: flex-start;
-  padding: 8px;
-  font-size: 13px;
-  gap: 10px;
-  color: var(--muted);
-}
+.document-item { justify-content: flex-start; width: 100%; }
 .document-item > span:first-of-type {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.document-item.active {
-  background: var(--hover);
-  color: var(--ink);
-}
+
 .active-dot {
   width: 5px;
   height: 5px;
@@ -167,7 +121,6 @@ button svg {
 .import-action {
   justify-content: flex-start;
   margin: 15px 0 0 3px;
-  color: var(--muted);
 }
 .local-note {
   margin-top: auto;
@@ -209,12 +162,6 @@ button svg {
 .page-tools {
   gap: 4px;
 }
-.page-tools button {
-  font-size: 12px;
-  color: var(--ink);
-  padding: 6px 8px;
-  white-space: nowrap;
-}
 .count {
   background: var(--soft);
   color: var(--accent);
@@ -224,19 +171,8 @@ button svg {
 }
 .document-title {
   width: 10rem;
-  min-width: 0;
   flex: 1;
   max-width: 22rem;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted);
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  padding: 6px 8px;
-}
-.document-title:hover {
-  background: var(--hover);
 }
 .document-editor {
   font-size: 18px;
@@ -343,8 +279,7 @@ button svg {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--muted);
-  padding: 4px 0;
+
 }
 .status-separator {
   color: var(--muted);
@@ -384,8 +319,6 @@ button svg {
   text-align: left;
   font-size: 12px;
   line-height: 1.7;
-  background: var(--soft);
-  padding: 3px 7px;
   justify-content: flex-start;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -397,12 +330,6 @@ button svg {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.6;
-}
-.text-action {
-  color: var(--accent);
-  font-size: 10px;
-  padding: 4px 0;
-  justify-content: flex-start;
 }
 .review-empty {
   padding: 45px 0;
@@ -426,15 +353,6 @@ button svg {
   line-height: 1.7;
   margin: 12px 0;
 }
-.primary-button {
-  background: var(--accent);
-  color: var(--paper);
-  padding: 6px 13px;
-}
-.primary-button:hover {
-  background: color-mix(in srgb, var(--accent) 90%, var(--ink));
-  color: var(--paper);
-}
 progress {
   width: 100%;
   accent-color: var(--accent);
@@ -445,11 +363,6 @@ progress {
   flex-direction: column;
   gap: 7px;
   margin-top: 20px;
-}
-.assist-actions button {
-  justify-content: space-between;
-  border: 1px solid var(--line);
-  padding: 11px;
 }
 .proposal {
   padding: 20px 0;
@@ -465,14 +378,11 @@ progress {
   display: flex;
   gap: 9px;
 }
-.remove-model {
-  margin-top: 25px;
-  color: var(--muted);
-}
+.remove-model { margin-top: 25px; }
 .error-banner {
   padding: 12px 25px;
-  background: #f5e4db;
-  color: #803d28;
+  background: var(--error-bg);
+  color: var(--error-ink);
   font-size: 12px;
   line-height: 1.7;
 }
@@ -520,7 +430,7 @@ progress {
     bottom: 0;
     z-index: 5;
     width: min(320px, 90vw);
-    box-shadow: -8px 0 24px #0000000b;
+    box-shadow: -8px 0 24px var(--shadow-panel);
   }
 }
 @media (max-width: 760px) {
@@ -529,17 +439,13 @@ progress {
   }
   .toolbar {
     width: 100%;
-    gap: 4px;
+    gap: 0;
   }
+  .page-tools { gap: 0; }
   .toolbar > button span {
     display: none;
   }
-  .toolbar-divider {
-    margin: 0 2px;
-  }
-  .toolbar button {
-    padding: 6px;
-  }
+  .toolbar-divider { display: none; }
   .documents {
     position: absolute;
     z-index: 4;
@@ -547,7 +453,7 @@ progress {
     top: 0;
     bottom: 0;
     width: min(256px, 85vw);
-    box-shadow: 8px 0 24px #0000000b;
+    box-shadow: 8px 0 24px var(--shadow-panel);
   }
   .writing-area {
     padding-top: 3rem;
@@ -598,12 +504,9 @@ progress {
   background: var(--ink);
   color: var(--paper);
   border-radius: 6px;
-  box-shadow: 0 3px 16px #0002;
+  box-shadow: 0 3px 16px var(--shadow-notice);
   font-size: 11px;
   line-height: 1.7;
-}
-.app-notice button:hover {
-  background: var(--muted);
 }
 
 .document-editor .embedded-image {
@@ -633,9 +536,9 @@ progress {
 }
 
 .embedded-image-container { display: inline-block; max-width: 100%; }
-.image-alt-action { display: block; margin: .35rem 0 .75rem; font: 11px var(--font-mono, monospace); opacity: .75; }
+.image-alt-action { display: flex; margin: .35rem 0 .75rem; }
 .image-description label { display: block; margin: 1rem 0 .5rem; }
-.image-description textarea { width: 100%; resize: vertical; padding: .7rem; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: inherit; font: inherit; }
 .alt-preview { display: block; max-width: 100%; max-height: 180px; object-fit: contain; margin: 1rem 0; }
 
-.image-description textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+}

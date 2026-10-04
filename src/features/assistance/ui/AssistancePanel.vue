@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BaseButton } from '../../../shared/ui/button'
 import { X, Check, ArrowRight } from '@lucide/vue'
 import type { AssistantState, WritingAction } from '../domain/assistant'
 import type { WritingIssue } from '../domain/review'
@@ -26,13 +27,13 @@ const emit = defineEmits<{
           <h2>
             {{ panel === 'review' ? 'Writing review' : 'Writing help' }}
           </h2>
-          <button
-            class="icon-button"
+          <BaseButton
+            size="icon"
             aria-label="Close panel"
             @click="emit('close')"
           >
             <X :size="17" />
-          </button>
+          </BaseButton>
         </div>
         <template v-if="panel === 'review'">
           <p class="panel-description">
@@ -48,20 +49,20 @@ const emit = defineEmits<{
             <p>No issues found by these checks.<br />Keep going.</p>
           </div>
           <article v-for="issue in issues" :key="issue.id" class="issue-card">
-            <button
-              class="issue-excerpt"
+            <BaseButton
+              variant="soft" class="issue-excerpt"
               @click="emit('select-range', issue.from, issue.to)"
             >
               {{ issue.text }}
-            </button>
+            </BaseButton>
             <p>{{ issue.message }}</p>
-            <button
+            <BaseButton
               v-if="issue.replacement !== undefined"
-              class="text-action"
+              variant="text"
               @click="emit('apply-issue', issue.from, issue.to, issue.replacement)"
             >
               Use “{{ issue.replacement }}” <ArrowRight :size="13" />
-            </button>
+            </BaseButton>
           </article>
         </template>
         <template v-else>
@@ -70,7 +71,7 @@ const emit = defineEmits<{
             choose what you need.
           </p>
           <p class="panel-description">{{ assistantState.message }}</p>
-          <button @click="emit('settings')">Manage models in Settings</button>
+          <BaseButton @click="emit('settings')">Manage models in Settings</BaseButton>
           <div v-if="assistantState.phase === 'ready'" class="assist-actions">
             <p>
               {{
@@ -79,20 +80,20 @@ const emit = defineEmits<{
                   : 'Select some text in the editor to begin.'
               }}
             </p>
-            <button :disabled="!selected" @click="emit('suggest', 'shorten')">
-              Make it shorter <ArrowRight :size="14" /></button
-            ><button :disabled="!selected" @click="emit('suggest', 'clarify')">
-              Make it clearer <ArrowRight :size="14" /></button
-            ><button :disabled="!selected" @click="emit('suggest', 'heading')">
+            <BaseButton variant="outline" class="justify-between" :disabled="!selected" @click="emit('suggest', 'shorten')">
+              Make it shorter <ArrowRight :size="14" /></BaseButton
+            ><BaseButton variant="outline" class="justify-between" :disabled="!selected" @click="emit('suggest', 'clarify')">
+              Make it clearer <ArrowRight :size="14" /></BaseButton
+            ><BaseButton variant="outline" class="justify-between" :disabled="!selected" @click="emit('suggest', 'heading')">
               Suggest a heading <ArrowRight :size="14" />
-            </button>
+            </BaseButton>
           </div>
           <div v-if="proposal" class="proposal">
             <span class="eyebrow">SUGGESTED WORDING</span>
             <p>{{ proposal.text }}</p>
             <div class="proposal-actions">
-              <button class="primary-button" @click="emit('accept')">Accept</button
-              ><button @click="emit('discard')">Discard</button>
+              <BaseButton variant="primary" @click="emit('accept')">Accept</BaseButton
+              ><BaseButton @click="emit('discard')">Discard</BaseButton>
             </div>
           </div>
         </template>

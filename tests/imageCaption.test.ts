@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
-import { createImageCaption, type CaptionWorker } from '../src/assistance/adapters/imageCaption'
-import type { CaptionRequest } from '../src/assistance/adapters/captionProtocol'
-import type { ModelFiles } from '../src/assistance/adapters/modelAssets'
+import { createImageCaption, type CaptionWorker } from '../src/features/assistance/adapters/imageCaption'
+import type { CaptionRequest } from '../src/features/assistance/adapters/captionProtocol'
+import type { ModelFiles } from '../src/features/assistance/adapters/modelAssets'
 const source = 'data:image/png;base64,YQ=='
 function setup(files: ModelFiles = 'available') {
   const requests: CaptionRequest[] = []

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { BaseInput } from '../shared/ui/input'
+import { BaseTextarea } from '../shared/ui/textarea'
+import { BaseButton } from '../shared/ui/button'
 import {
   computed,
   nextTick,
@@ -24,19 +27,19 @@ import {
   SlidersHorizontal,
   ArrowRight,
 } from '@lucide/vue'
-import { DocumentEditor, embeddedImages, imageAwareWordCount } from '../editor/ui'
-import { hasUnsecuredChanges } from '../documents'
-import { recoveryStatusText, diskStatusText } from '../documents/ui'
+import { DocumentEditor, embeddedImages, imageAwareWordCount } from '../features/editor/ui'
+import { hasUnsecuredChanges } from '../features/documents'
+import { recoveryStatusText, diskStatusText } from '../features/documents/ui'
 import type { WriterServices } from './bootstrap'
 import { createSuggestionSession } from './application/suggestionSession'
 import { suggestionNoticeText } from './suggestionNotice'
 import { saveBeforeUpdate, type RegisterAppUpdate } from './application/appUpdate'
-import type { ImageTarget } from '../editor/ui'
-import type { ModelFiles } from '../assistance'
-import { ModelSettings } from '../assistance/ui'
-import { checkWriting, type WritingAction } from '../assistance'
-import { AssistancePanel } from '../assistance/ui'
-import { DocumentList } from '../documents/ui'
+import type { ImageTarget } from '../features/editor/ui'
+import type { ModelFiles } from '../features/assistance'
+import { ModelSettings } from '../features/assistance/ui'
+import { checkWriting, type WritingAction } from '../features/assistance'
+import { AssistancePanel } from '../features/assistance/ui'
+import { DocumentList } from '../features/documents/ui'
 const props = defineProps<{ services: WriterServices; registerUpdates?: RegisterAppUpdate | undefined }>()
 const { services } = props
 const { workspace, assistant, captions } = services
@@ -87,9 +90,9 @@ const mode = ref('NORMAL')
 const panel = ref<'review' | 'assist' | 'image' | 'settings' | null>(null)
 const imageTarget = shallowRef<ImageTarget | null>(null)
 const altDraft = ref('')
-const altInput = useTemplateRef<HTMLTextAreaElement>('altInput')
+const altInput = useTemplateRef<InstanceType<typeof BaseTextarea>>('altInput')
 let imageReturnFocus: HTMLElement | null = null
-const settingsButton = useTemplateRef<HTMLButtonElement>('settingsButton')
+const settingsButton = useTemplateRef<InstanceType<typeof BaseButton>>('settingsButton')
 const panelHost = useTemplateRef<HTMLElement>('panelHost')
 let captionEpoch = 0
 let altRevision = 0
@@ -338,48 +341,49 @@ async function removeModel() {
   <div class="app-shell" :class="{ dark, focused: focusMode }">
     <header class="topbar">
       <div class="brand-group">
-        <button
-          class="icon-button"
+        <BaseButton
+          size="icon"
           aria-label="Toggle documents"
           :aria-expanded="sidebar && !focusMode"
           @click="toggleDocuments"
         >
           <PanelLeft :size="18" />
-        </button>
+        </BaseButton>
         <span class="brand">alexopwriter</span>
       </div>
-      <input
+      <BaseInput
+        variant="ghost"
         v-if="active"
         class="document-title"
         aria-label="Document name"
-        :value="active.name"
+        :model-value="active.name"
         @change="renamed"
       />
       <nav aria-label="Document actions" class="toolbar">
-        <button aria-label="New document" @click="workspace.create()">
+        <BaseButton aria-label="New document" @click="workspace.create()">
           <Plus :size="15" /><span>New</span>
-        </button>
-        <button aria-label="Open file" @click="workspace.open()">
+        </BaseButton>
+        <BaseButton aria-label="Open file" @click="workspace.open()">
           <FolderOpen :size="15" /><span>Open</span>
-        </button>
-        <button
+        </BaseButton>
+        <BaseButton
           :disabled="!active"
           aria-label="Save"
           @click="active && workspace.save(active.id)"
         >
           <Check :size="15" /><span>Save</span>
-        </button>
-        <button
-          class="icon-button"
+        </BaseButton>
+        <BaseButton
+          size="icon"
           aria-label="Download copy"
           :disabled="!active"
           @click="download"
         >
           <Download :size="16" />
-        </button>
+        </BaseButton>
         <span class="toolbar-divider" />
         <div class="page-tools">
-          <button
+          <BaseButton
             aria-label="Writing checks"
             :aria-expanded="panel === 'review'"
             @click="togglePanel('review')"
@@ -388,40 +392,40 @@ async function removeModel() {
               v-if="issues.length"
               class="count"
               >{{ issues.length }}</span
-            ></button
-          ><button
+            ></BaseButton
+          ><BaseButton
             aria-label="Local writing help"
             :aria-expanded="panel === 'assist'"
             @click="togglePanel('assist')"
           >
             <Feather :size="14" /><span class="help-label">Writing help</span>
-          </button>
+          </BaseButton>
         </div>
-        <button ref="settingsButton" aria-label="Settings" :aria-expanded="panel === 'settings'" @click="openSettings">Settings</button>
+        <BaseButton ref="settingsButton" aria-label="Settings" :aria-expanded="panel === 'settings'" @click="openSettings">Settings</BaseButton>
         <span class="toolbar-divider" />
-        <button
-          class="icon-button"
+        <BaseButton
+          size="icon"
           aria-label="Dark mode"
           :aria-pressed="dark"
           @click="dark = !dark"
         >
           <Sun v-if="dark" :size="17" /><Moon v-else :size="17" />
-        </button>
-        <button
-          class="icon-button"
+        </BaseButton>
+        <BaseButton
+          size="icon"
           aria-label="Focus mode"
           :aria-pressed="focusMode"
           @click="focusMode = !focusMode"
         >
           <Minimize v-if="focusMode" :size="17" /><Maximize v-else :size="17" />
-        </button>
+        </BaseButton>
       </nav>
     </header>
     <div v-if="updateAvailable" class="update-banner" role="status">
       <span>A new version is ready. Update reloads the app after saving your drafts.</span>
-      <button :disabled="updating || !workspaceReady" @click="applyUpdate">
+      <BaseButton :disabled="updating || !workspaceReady" @click="applyUpdate">
         {{ updating ? 'Saving drafts…' : 'Update app' }}
-      </button>
+      </BaseButton>
     </div>
     <input
       ref="importer"
@@ -456,9 +460,9 @@ async function removeModel() {
           <Feather :size="32" />
           <h1>A little room to think.</h1>
           <p>Open a file or start with a blank page.</p>
-          <button @click="workspace.create()">
+          <BaseButton @click="workspace.create()">
             Start writing <ArrowRight :size="15" />
-          </button>
+          </BaseButton>
         </div>
       </main>
       <aside
@@ -475,13 +479,13 @@ async function removeModel() {
           <h2>
             {{ panel === 'settings' ? 'Settings' : panel === 'image' ? 'Image description' : panel === 'review' ? 'Writing review' : 'Writing help' }}
           </h2>
-          <button
-            class="icon-button"
+          <BaseButton
+            size="icon"
             aria-label="Close panel"
             @click="closePanel"
           >
             <X :size="17" />
-          </button>
+          </BaseButton>
         </div>
         <ModelSettings v-if="panel === 'settings'" :caption="captionState" :writing="assistantState" :writing-files="writingFiles" @download-caption="downloadCaption" @cancel-caption="captions.cancel()" @remove-caption="removeCaption" @enable-writing="enable" @cancel-writing="session.cancel()" @remove-writing="removeModel" />
         <template v-else-if="panel === 'image' && imageTarget">
@@ -489,18 +493,18 @@ async function removeModel() {
             <img :src="imageTarget.url" :alt="imageTarget.alt" class="alt-preview" />
             <p class="panel-description">Describe what matters about this image in your document.</p>
             <label for="image-alt">Alt text</label>
-            <textarea id="image-alt" ref="altInput" v-model="altDraft" rows="5" />
+            <BaseTextarea id="image-alt" ref="altInput" v-model="altDraft" rows="5" />
             <p class="panel-description">Leave empty for a decorative image.</p>
             <template v-if="captionState.phase === 'generating'">
               <p role="status">{{ captionState.message }}</p>
-              <button @click="captionEpoch++; captions.cancel()">Cancel generation</button>
+              <BaseButton @click="captionEpoch++; captions.cancel()">Cancel generation</BaseButton>
             </template>
-            <button v-else-if="captionState.files === 'available'" @click="generateAlt">Generate alt text</button>
-            <button v-else @click="openSettings">Set up local generation</button>
+            <BaseButton v-else-if="captionState.files === 'available'" @click="generateAlt">Generate alt text</BaseButton>
+            <BaseButton v-else @click="openSettings">Set up local generation</BaseButton>
             <p class="panel-description">Generated descriptions are in English. Check details, especially text and charts.</p>
             <div class="proposal-actions">
-              <button class="primary-button" @click="applyAlt">Apply alt text</button>
-              <button @click="closeImage">Cancel</button>
+              <BaseButton variant="primary" @click="applyAlt">Apply alt text</BaseButton>
+              <BaseButton @click="closeImage">Cancel</BaseButton>
             </div>
           </section>
         </template>
@@ -513,23 +517,24 @@ async function removeModel() {
     </div>
     <div v-if="displayNotice" class="app-notice" role="status">
       <span>{{ displayNotice }}</span
-      ><button
-        class="icon-button"
+      ><BaseButton
+        size="icon"
+        variant="inverse"
         aria-label="Dismiss notification"
         @click="dismissNotice"
       >
         <X :size="14" />
-      </button>
+      </BaseButton>
     </div>
     <footer class="statusbar">
       <div>
-        <button
+        <BaseButton
           aria-label="Vim mode"
           :aria-pressed="vimEnabled"
           class="mode-button"
           @click="vimEnabled = !vimEnabled"
         >
-          {{ mode }}</button
+          {{ mode }}</BaseButton
         ><span>{{ words.toLocaleString() }} words</span
         ><span class="status-separator">/</span
         ><span>{{ Math.max(1, Math.ceil(words / 200)) }} min read</span>

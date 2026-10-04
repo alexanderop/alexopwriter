@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BaseButton } from '../../../shared/ui/button'
 import type { AssistantState } from '../domain/assistant'
 import type { CaptionState } from '../domain/imageCaption'
 import { CAPTION_MODEL, type ModelFiles } from '../domain/modelFiles'
@@ -27,13 +28,13 @@ function availability(files: ModelFiles) {
     <p v-if="caption.phase !== 'idle'" role="status">{{ caption.message }}</p>
     <template v-if="caption.phase === 'loading' || caption.phase === 'generating'">
       <progress aria-label="Image model progress" />
-      <button @click="$emit('cancel-caption')">Cancel image model</button>
+      <BaseButton @click="$emit('cancel-caption')">Cancel image model</BaseButton>
     </template>
     <template v-else-if="caption.phase !== 'removing'">
-      <button v-if="caption.files !== 'available'" class="primary-button" @click="$emit('download-caption')">{{ caption.phase === 'error' || caption.files === 'partial' ? 'Retry image model download' : 'Download image model' }}</button>
+      <BaseButton v-if="caption.files !== 'available'" variant="primary" @click="$emit('download-caption')">{{ caption.phase === 'error' || caption.files === 'partial' ? 'Retry image model download' : 'Download image model' }}</BaseButton>
       <p v-else-if="caption.phase !== 'ready'" class="panel-description">Available. Loads when you generate a description.</p>
-      <button v-if="caption.phase === 'ready'" @click="$emit('cancel-caption')">Unload image model</button>
-      <button v-if="caption.files !== 'absent'" class="text-action" @click="$emit('remove-caption')">Remove image model files</button>
+      <BaseButton v-if="caption.phase === 'ready'" @click="$emit('cancel-caption')">Unload image model</BaseButton>
+      <BaseButton v-if="caption.files !== 'absent'" variant="text" @click="$emit('remove-caption')">Remove image model files</BaseButton>
     </template>
   </section>
   <section class="model-card" aria-label="Writing help model">
@@ -45,12 +46,12 @@ function availability(files: ModelFiles) {
     <p role="status">{{ writing.message }}</p>
     <template v-if="writing.phase === 'loading' || writing.phase === 'running'">
       <progress :value="writing.progress" max="100" aria-label="Model progress" />
-      <button @click="$emit('cancel-writing')">Cancel writing model</button>
+      <BaseButton @click="$emit('cancel-writing')">Cancel writing model</BaseButton>
     </template>
     <template v-else>
-      <button v-if="writing.phase !== 'ready'" class="primary-button" @click="$emit('enable-writing')">{{ writingFiles === 'available' ? 'Enable writing model' : 'Download & enable' }}</button>
+      <BaseButton v-if="writing.phase !== 'ready'" variant="primary" @click="$emit('enable-writing')">{{ writingFiles === 'available' ? 'Enable writing model' : 'Download & enable' }}</BaseButton>
       <p v-else class="ready-state">Ready on this device</p>
-      <button class="text-action remove-model" @click="$emit('remove-writing')">Remove downloaded model</button>
+      <BaseButton variant="text" class="remove-model" @click="$emit('remove-writing')">Remove downloaded model</BaseButton>
     </template>
   </section>
   <p class="panel-description">Writing checks work without a model. Removing model files does not change your documents or saved alt text.</p>

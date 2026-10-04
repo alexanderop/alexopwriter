@@ -2,7 +2,6 @@ import ts from 'typescript'
 import path from 'node:path'
 
 export type ArchitectureIssue = { file: string; line: number; message: string }
-const features = new Set(['documents', 'assistance', 'editor'])
 const ambientEffects = new Set([
   'window', 'document', 'navigator', 'globalThis', 'self', 'localStorage', 'sessionStorage',
   'indexedDB', 'caches', 'crypto', 'Date', 'File', 'FileReader', 'Blob', 'Worker',
@@ -14,11 +13,11 @@ function relative(root: string, file: string) {
   return path.relative(path.join(root, 'src'), file).split(path.sep).join('/')
 }
 function feature(file: string) {
-  const name = file.split('/')[0] ?? ''
-  return features.has(name) ? name : null
+  const [area, name] = file.split('/')
+  return area === 'features' && name ? `features/${name}` : null
 }
 function core(file: string) {
-  return /^(documents|assistance|editor)\/(domain|application)\//.test(file) || file.startsWith('app/application/')
+  return /^features\/[^/]+\/(domain|application)\//.test(file) || file.startsWith('app/application/')
 }
 function modulePath(specifier: string, importer: string, root: string, options: ts.CompilerOptions): string | null {
   const clean = specifier.split('?')[0] ?? specifier
@@ -36,6 +35,9 @@ function modulePath(specifier: string, importer: string, root: string, options: 
   if (resolved && !resolved.isExternalLibraryImport) return path.resolve(resolved.resolvedFileName)
   return null
 }
+function within(file: string, directory: string) {
+  return file === directory || file.startsWith(`${directory}/`)
+}
 export function inspectArchitecture(source: string, file: string, root: string, options: ts.CompilerOptions = {}): ArchitectureIssue[] {
   const origin = relative(root, file)
   const owner = feature(origin)
@@ -51,35 +53,46 @@ export function inspectArchitecture(source: string, file: string, root: string, 
     const target = modulePath(specifier, file, root, options)
     const report = (message: string) => issues.push({ file: origin, line, message })
     if (!target) {
+      if (/^(?:(?:reka-ui|radix-vue)(?:$|\/)|@radix-ui\/)/.test(specifier) && !origin.startsWith('shared/ui/')) report(`UI primitives belong in shared/ui: ${specifier}`)
       if (pure) report(`Core modules cannot import external dependencies: ${specifier}`)
       return
     }
     const destination = relative(root, target).replace(/\.(ts|vue|js|mjs)$/, '').replace(/\/index$/, '')
     const targetOwner = feature(destination)
+    if (within(destination, 'shared/ui')) {
+      const unit = destination.split('/')[2]
+      const ownUnit = origin.startsWith(`shared/ui/${unit}/`)
+      if (!ownUnit && destination !== `shared/ui/${unit}`) report(`Use the shared UI public API: ${specifier}`)
+    }
+    if (origin.startsWith('shared/storage/') && within(destination, 'shared/ui')) report(`Storage cannot depend on UI: ${specifier}`)
+    if (origin.startsWith('shared/ui/') && within(destination, 'shared/storage')) report(`UI components cannot own persistence: ${specifier}`)
     if (destination.startsWith('../')) {
       report(`Source modules cannot import outside src: ${specifier}`)
       return
     }
-    if (owner && ((targetOwner && targetOwner !== owner) || destination.startsWith('app/') || destination === 'App' || destination === 'main')) {
+    if (owner && ((targetOwner && targetOwner !== owner) || within(destination, 'app') || destination === 'App' || destination === 'main')) {
       report(`Features cannot import another feature or app: ${specifier}`)
     }
-    if (origin.startsWith('storage/') && (targetOwner || destination.startsWith('app/') || destination === 'App' || destination === 'main')) {
-      report(`Storage cannot depend on features or app: ${specifier}`)
+    if (origin.startsWith('shared/') && (targetOwner || within(destination, 'app') || destination === 'App' || destination === 'main')) {
+      report(`Shared cannot depend on features or app: ${specifier}`)
     }
     if (targetOwner && targetOwner !== owner) {
       const publicEntry = destination === targetOwner || destination === `${targetOwner}/ui`
       const compositionAdapter = origin === 'app/bootstrap.ts' && destination.startsWith(`${targetOwner}/adapters/`)
       if (!publicEntry && !compositionAdapter) report(`Use the feature public API: ${specifier}`)
     }
-    if (owner && origin === `${owner}/index.ts` && !new RegExp(`^${owner}/(domain|application)/`).test(destination) && !(owner === 'editor' && destination === 'editor/ports')) {
+    if (owner && origin === `${owner}/index.ts` && !new RegExp(`^${owner}/(domain|application)/`).test(destination) && !(owner === 'features/editor' && destination === 'features/editor/ports')) {
       report(`Public core API cannot export infrastructure or UI: ${specifier}`)
     }
     if (pure) {
-      if (destination.startsWith('storage/') || /\/(adapters|ui)(\/|$)/.test(destination)) report(`Core modules cannot import infrastructure or UI: ${specifier}`)
+      if (within(destination, 'shared') || /\/(adapters|ui)(\/|$)/.test(destination)) report(`Core modules cannot import infrastructure or UI: ${specifier}`)
       if (owner && origin.includes('/application/') && !new RegExp(`^${owner}/(application|domain)/`).test(destination)) report(`Feature workflows only depend on their own application and domain: ${specifier}`)
       if (origin.includes('/domain/') && !destination.startsWith(`${owner}/domain/`)) report(`Domain modules only depend on their own domain: ${specifier}`)
       if (origin.startsWith('app/application/') && !targetOwner && !destination.startsWith('app/application/')) report(`App workflows cannot import composition or presentation: ${specifier}`)
     }
+  }
+  if (!/^(app|features|shared)\//.test(origin) && !['main.ts', 'App.vue', 'pwa.d.ts'].includes(origin)) {
+    issues.push({ file: origin, line: 1, message: 'Source modules belong in app, features/<name>, or shared' })
   }
   for (const block of blocks) {
     if (block.src) dependency(block.src, block.offset + 1)

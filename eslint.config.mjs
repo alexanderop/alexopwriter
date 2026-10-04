@@ -1,3 +1,5 @@
+import architecture from './tooling/oxlint-plugin.mjs'
+import ui from './tooling/ui-conventions.mjs'
 import pluginVue from "eslint-plugin-vue"
 import tseslint from "typescript-eslint"
 import vueParser from "vue-eslint-parser"
@@ -17,8 +19,10 @@ export default [
         sourceType: "module"
       }
     },
-    plugins: { vue: pluginVue },
+    plugins: { vue: pluginVue, "writer-architecture": architecture, "writer-ui": ui },
     rules: {
+      "writer-architecture/boundaries": "error",
+      "writer-ui/shared-controls": "error",
       "vue/attribute-hyphenation": ["error", "always"],
       "vue/component-name-in-template-casing": [
         "error",
