@@ -1,7 +1,8 @@
+import { memoryRecovery } from './support/workspace'
 import { describe, expect, it } from 'vitest'
-import { createWorkspace } from '../src/documents/workspace'
-import type { DiskBinding, FileAccess } from '../src/documents/files'
-import type { RecoveryRecord, RecoveryStore } from '../src/documents/recovery'
+import { testWorkspace as createWorkspace } from './support/workspace'
+import type { DiskBinding, FileAccess } from '../src/documents'
+import type { RecoveryRecord, RecoveryStore } from '../src/documents'
 function deferred<T>() {
   let resolve: (value: T) => void = () => {
     throw new Error('Not initialized')
@@ -10,18 +11,6 @@ function deferred<T>() {
     resolve = done
   })
   return { promise, resolve }
-}
-function memoryRecovery(): RecoveryStore {
-  const rows = new Map<string, RecoveryRecord>()
-  return {
-    async list() {
-      return [...rows.values()]
-    },
-    async put(row) {
-      rows.set(`${row.id}:${row.actor}`, row)
-    },
-    close() {},
-  }
 }
 function fixture(binding: DiskBinding) {
   let id = 0
@@ -60,13 +49,13 @@ describe('document persistence workflows', () => {
       await workspace.open()
       const id = activeId(workspace)
       workspace.download(id)
-      expect(workspace.snapshot().documents[0]?.diskStatus).toBe(
-        'Saved to disk',
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
+        'saved',
       )
       workspace.edited(id, 'edited copy')
       workspace.download(id)
-      expect(workspace.snapshot().documents[0]?.diskStatus).toBe(
-        'Unsaved changes',
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
+        'dirty',
       )
       expect(workspace.snapshot().documents[0]?.text).toBe('edited copy')
     } finally {
@@ -102,13 +91,13 @@ describe('document persistence workflows', () => {
       release.resolve()
       await saving
       expect(bytes).toBe('first edit')
-      expect(workspace.snapshot().documents[0]?.diskStatus).toBe(
-        'Unsaved changes',
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
+        'dirty',
       )
       await workspace.save(id)
       expect(bytes).toBe('newer edit')
-      expect(workspace.snapshot().documents[0]?.diskStatus).toBe(
-        'Saved to disk',
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe(
+        'saved',
       )
     } finally {
       release.resolve()
@@ -136,7 +125,7 @@ describe('document persistence workflows', () => {
       expect(bytes).toBe('original')
       expect(workspace.snapshot().documents[0]?.text).toBe('valuable text')
       expect((await recovery.list())[0]?.text).toBe('valuable text')
-      expect(workspace.snapshot().documents[0]?.diskStatus).toContain('failed')
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain('failed')
       fail = false
       await workspace.save(id)
       expect(bytes).toBe('valuable text')
@@ -195,8 +184,8 @@ describe('document persistence workflows', () => {
       await workspace.save(activeId(workspace))
       expect(bytes).toBe('external edits')
       expect(workspace.snapshot().documents[0]?.text).toBe('local edits')
-      expect(workspace.snapshot().documents[0]?.diskStatus).toContain(
-        'changed on disk',
+      expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain(
+        'conflict',
       )
     } finally {
       await workspace.dispose()

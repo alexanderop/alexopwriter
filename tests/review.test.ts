@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkWriting } from '../src/assistance/review.ts'
+import { checkWriting } from '../src/assistance/domain/review.ts'
 
 describe('deterministic writing checks', () => {
   it('finds repeated words and offers a concrete correction', () => {

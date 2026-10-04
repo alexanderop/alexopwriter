@@ -12,6 +12,18 @@ Each browser actor has its own recovery branch. Competing tabs preserve both ver
 
 A writing suggestion carries the document identity, revision, and original passage. Acceptance rejects a changed target and enters a separately undoable CodeMirror transaction. Cancellation invalidates the pending result and terminates model work.
 
+## IndexedDB query ownership
+
+The native IndexedDB store owns its connection and query atoms. Each atom shares loading, ready, or error state between subscribers. Observation starts with the first subscriber and stops with the last. One-shot reads use fresh transactions, so startup recovery does not depend on an observer cache. Vue adapts subscriptions to component lifetime without taking ownership of the database.
+
+Recovery retains database `alexopwriter-web`, native version 10, and the `drafts` store with compound key `['id', 'actor']`. The previous Dexie declaration used version 1, which corresponds to native version 10. The schema keeps its `id` and `updatedAt` indexes. Zod validates stored rows and incoming writes.
+
+An update reads and compares the previous revision inside the same readwrite transaction that queues the write. Equal revisions remain accepted. Only transaction completion acknowledges persistence and invalidates queries. Each store owner publishes commit notifications through its own BroadcastChannel. Other owners reread IndexedDB rather than accepting row data from a message.
+
+The selected design combines a reusable typed store with database-owned query atoms. Recovery's existing `list()` uses its drafts atom's fresh `read()` operation. A recovery-only implementation would remove Dexie but would not provide the reusable wrapper requested. A general atom registry would introduce dependency tracking and provisioning beyond this app's needs. Record families and implicit writable atoms add competing persistence paths, so the wrapper retains explicit guarded updates.
+
+Whole-store queries and table-level invalidation trade query precision for a small API. Cross-tab updates are eventual. Focus and page restoration revalidate observations when notifications were missed. Query updates never overwrite the live editor or automatically append recovered documents to the workspace.
+
 ## Alternatives considered
 
 Three design sketches compared a document service, a reducer with interpreted commands, and reuse through the desktop API. The service was selected for its small caller interface and isolated browser boundaries. The reducer's exact revision acknowledgement was retained as an invariant. Selective editor reuse was retained; the full desktop API was rejected because it includes publication and process operations.

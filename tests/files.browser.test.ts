@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest'
-import Dexie from 'dexie'
-import { browserFiles } from '../src/documents/files'
-import { dexieRecovery } from '../src/documents/recovery'
-import { createWorkspace } from '../src/documents/workspace'
+import { deleteDatabase } from './helpers/indexedDb'
+import { browserFiles } from '../src/documents/adapters/browserFiles'
+import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { testWorkspace as createWorkspace } from './support/workspace'
 
 it('writes through the production file adapter to OPFS and preserves conflicting external bytes', async () => {
   const id = crypto.randomUUID()
@@ -10,7 +10,7 @@ it('writes through the production file adapter to OPFS and preserves conflicting
   const databaseName = `alexopwriter-adapter-${id}`
   const root = await navigator.storage.getDirectory()
   const handle = await root.getFileHandle(filename, { create: true })
-  const recovery = dexieRecovery(databaseName)
+  const recovery = indexedDbRecovery(databaseName)
   const workspace = createWorkspace({
     recovery,
     files: browserFiles({
@@ -36,7 +36,7 @@ it('writes through the production file adapter to OPFS and preserves conflicting
     expect(await (await handle.getFile()).text()).toBe(
       'Saved through the real browser adapter. 🌿',
     )
-    expect(workspace.snapshot().documents[0]?.diskStatus).toBe('Saved to disk')
+    expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('saved')
     const external = await handle.createWritable()
     await external.write('External file change')
     await external.close()
@@ -45,13 +45,13 @@ it('writes through the production file adapter to OPFS and preserves conflicting
     await workspace.flush()
     expect(await (await handle.getFile()).text()).toBe('External file change')
     expect(workspace.snapshot().documents[0]?.text).toBe('Local edit to retain')
-    expect(workspace.snapshot().documents[0]?.diskStatus).toContain(
-      'changed on disk',
+    expect(workspace.snapshot().documents[0]?.diskStatus.kind).toContain(
+      'conflict',
     )
     expect((await recovery.list())[0]?.text).toBe('Local edit to retain')
   } finally {
     await workspace.dispose()
-    await Dexie.delete(databaseName)
+    await deleteDatabase(databaseName)
     await root.removeEntry(filename)
   }
 })

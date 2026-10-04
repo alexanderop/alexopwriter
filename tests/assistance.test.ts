@@ -1,11 +1,11 @@
+import { MODEL_INFO } from '../src/assistance'
 import { describe, expect, it } from 'vitest'
 import {
   createLocalAssistant,
   isModelCacheRequest,
-  MODEL_INFO,
   type AssistantWorker,
-} from '../src/assistance/index.ts'
-import type { WorkerRequest } from '../src/assistance/protocol.ts'
+} from '../src/assistance/adapters/localAssistant.ts'
+import type { WorkerRequest } from '../src/assistance/adapters/protocol.ts'
 
 function controlledWorker() {
   const requests: WorkerRequest[] = []
@@ -32,7 +32,7 @@ function controlledWorker() {
 
 async function readyAssistant() {
   const channel = controlledWorker()
-  const assistant = createLocalAssistant({ createWorker: () => channel.worker })
+  const assistant = createLocalAssistant({ removeCache: async () => {}, createWorker: () => channel.worker })
   const loading = assistant.enable()
   channel.reply({ type: 'ready', id: channel.requests[0]?.id })
   await loading
@@ -43,7 +43,7 @@ describe('optional local assistance', () => {
   it('starts a worker only after explicit enable and reports progress', async () => {
     const channel = controlledWorker()
     let starts = 0
-    const assistant = createLocalAssistant({
+    const assistant = createLocalAssistant({ removeCache: async () => {},
       createWorker: () => {
         starts += 1
         return channel.worker
@@ -106,7 +106,7 @@ describe('optional local assistance', () => {
   it('reports download failure and permits retry through a fresh worker', async () => {
     const channels = [controlledWorker(), controlledWorker()]
     let created = 0
-    const assistant = createLocalAssistant({
+    const assistant = createLocalAssistant({ removeCache: async () => {},
       createWorker: () => {
         const channel = channels[created++]
         if (!channel) throw new Error('Unexpected worker')

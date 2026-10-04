@@ -6,6 +6,14 @@ Feature: Writing in the browser
     And I reload the app
     Then my document contains "A quiet place to think. 🌿"
 
+  Scenario: Two tabs retain their separate edits after reloading
+    Given I have opened the browser writer
+    When I import a file containing "The shared starting paragraph."
+    And the browser has saved my draft
+    And I edit the document in two tabs to "The first tab's paragraph." and "The second tab's paragraph."
+    And I reload the app
+    Then both recovered versions contain "The first tab's paragraph." and "The second tab's paragraph."
+
   Scenario: An imported file can be edited and downloaded
     Given I have opened the browser writer
     When I import a file containing "Original paragraph."

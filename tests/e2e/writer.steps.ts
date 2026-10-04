@@ -33,6 +33,53 @@ When('I reload the app', async ({ page }) => {
   await page.reload()
 })
 
+When(
+  'I edit the document in two tabs to {string} and {string}',
+  async ({ page, context }, firstText: string, secondText: string) => {
+    const firstEditor = page.getByRole('textbox', { name: 'Document editor' })
+    const original = await firstEditor.textContent()
+    const second = await context.newPage()
+    try {
+      await second.goto(page.url())
+      const secondEditor = second.getByRole('textbox', {
+        name: 'Document editor',
+      })
+      await expect(secondEditor).toHaveText(original ?? '')
+      await firstEditor.fill(firstText)
+      await secondEditor.fill(secondText)
+      await expect(
+        page.getByText('Draft saved in browser', { exact: true }),
+      ).toBeVisible()
+      await expect(
+        second.getByText('Draft saved in browser', { exact: true }),
+      ).toBeVisible()
+      await expect(firstEditor).toHaveText(firstText)
+      await expect(secondEditor).toHaveText(secondText)
+    } finally {
+      await second.close()
+    }
+  },
+)
+
+Then(
+  'both recovered versions contain {string} and {string}',
+  async ({ page }, firstText: string, secondText: string) => {
+    const documents = page
+      .getByRole('complementary', { name: 'Documents' })
+      .getByRole('button', { name: /^essay\.md(?: \(recovered copy\))?$/u })
+    await expect(documents).toHaveCount(2)
+    const versions: string[] = []
+    for (const document of await documents.all()) {
+      await document.click()
+      await expect(document).toHaveAttribute('aria-current', 'page')
+      versions.push(
+        await page.getByRole('textbox', { name: 'Document editor' }).innerText(),
+      )
+    }
+    expect(versions.sort()).toEqual([firstText, secondText].sort())
+  },
+)
+
 Then('my document contains {string}', async ({ page }, text: string) => {
   await expect(
     page.getByRole('textbox', { name: 'Document editor' }),

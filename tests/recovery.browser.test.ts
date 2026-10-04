@@ -1,11 +1,11 @@
 import { expect, it } from 'vitest'
-import Dexie from 'dexie'
-import { dexieRecovery } from '../src/documents/recovery'
-import { createWorkspace } from '../src/documents/workspace'
+import { deleteDatabase } from './helpers/indexedDb'
+import { indexedDbRecovery } from '../src/documents/adapters/indexedDbRecovery'
+import { testWorkspace as createWorkspace } from './support/workspace'
 it('preserves independent tab branches in real IndexedDB and rejects older revision writes', async () => {
   const name = `alexopwriter-recovery-test-${crypto.randomUUID()}`
-  const first = dexieRecovery(name)
-  const second = dexieRecovery(name)
+  const first = indexedDbRecovery(name)
+  const second = indexedDbRecovery(name)
   try {
     await Promise.all([
       first.put({
@@ -57,30 +57,30 @@ it('preserves independent tab branches in real IndexedDB and rejects older revis
   } finally {
     first.close()
     second.close()
-    await Dexie.delete(name)
+    await deleteDatabase(name)
   }
 })
 it('shows only the latest sequential recovery while retaining concurrent sibling edits', async () => {
   const name = `alexopwriter-lineage-test-${crypto.randomUUID()}`
-  const inspection = dexieRecovery(name)
+  const inspection = indexedDbRecovery(name)
   const first = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'first',
   })
   const second = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'second',
   })
   const sibling = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'sibling',
   })
   const latest = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'latest',
   })
   const restored = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'restored',
   })
   try {
@@ -116,21 +116,21 @@ it('shows only the latest sequential recovery while retaining concurrent sibling
       restored.dispose(),
     ])
     inspection.close()
-    await Dexie.delete(name)
+    await deleteDatabase(name)
   }
 })
 it('retains a parent branch updated beyond the revision its successor superseded', async () => {
   const name = `alexopwriter-parent-test-${crypto.randomUUID()}`
   const first = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'first',
   })
   const second = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'second',
   })
   const restored = createWorkspace({
-    recovery: dexieRecovery(name),
+    recovery: indexedDbRecovery(name),
     actor: 'restored',
   })
   try {
@@ -152,6 +152,6 @@ it('retains a parent branch updated beyond the revision its successor superseded
     ).toEqual(['Original tab still editing', 'Successor edit'])
   } finally {
     await Promise.all([first.dispose(), second.dispose(), restored.dispose()])
-    await Dexie.delete(name)
+    await deleteDatabase(name)
   }
 })

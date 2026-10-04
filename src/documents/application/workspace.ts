@@ -1,18 +1,5 @@
-import { browserFiles, type DiskBinding, type FileAccess } from './files'
-import {
-  dexieRecovery,
-  type RecoveryRecord,
-  type RecoveryStore,
-} from './recovery'
-export type DocumentSnapshot = {
-  readonly id: string
-  readonly name: string
-  readonly text: string
-  readonly revision: number
-  readonly recoveryStatus: string
-  readonly diskStatus: string
-  readonly hasDiskBinding: boolean
-}
+import type { DocumentSnapshot, RecoveryRecord, RecoveryStatus, DiskStatus } from '../domain/document'
+import type { DiskBinding, WorkspaceDependencies } from './ports'
 export type WorkspaceSnapshot = {
   readonly documents: readonly DocumentSnapshot[]
   readonly activeId: string | null
@@ -26,19 +13,10 @@ type DocumentState = {
   text: string
   revision: number
   recoveredRevision: number
-  recoveryStatus: string
-  diskStatus: string
+  recoveryStatus: RecoveryStatus
+  diskStatus: DiskStatus
   binding: DiskBinding | null
   baseline: string
-  diskRevision: number
-}
-export type WorkspaceOptions = {
-  recovery?: RecoveryStore
-  files?: FileAccess
-  actor?: string
-  id?: () => string
-  now?: () => number
-  recoveryDelay?: number
 }
 export type Workspace = {
   subscribe(listener: (snapshot: WorkspaceSnapshot) => void): () => void
@@ -46,7 +24,7 @@ export type Workspace = {
   initialize(): Promise<void>
   create(name?: string, text?: string): Promise<void>
   open(): Promise<void>
-  importFile(file: File): Promise<void>
+  importDocument(document: { name: string; text: string }): Promise<void>
   activate(id: string): void
   edited(id: string, text: string): void
   rename(id: string, name: string): void
@@ -57,18 +35,18 @@ export type Workspace = {
 }
 type DestinationReady = { kind: 'ready'; target: DiskBinding | null }
 type DestinationFailed = { kind: 'failed'; cause: Error }
-export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
-  const recovery = options.recovery ?? dexieRecovery()
-  const files = options.files ?? browserFiles()
-  const nextId = options.id ?? (() => crypto.randomUUID())
-  const actor = options.actor ?? crypto.randomUUID()
-  const now = options.now ?? Date.now
+export function createWorkspace(options: WorkspaceDependencies): Workspace {
+  const recovery = options.recovery
+  const files = options.files
+  const nextId = options.id
+  const actor = options.actor
+  const now = options.now
   const documents = new Map<string, DocumentState>()
   const listeners = new Set<(snapshot: WorkspaceSnapshot) => void>()
   let diskWork: Promise<void> = Promise.resolve()
   let activeId: string | null = null
   let error: string | null = null
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let cancelRecovery: (() => void) | undefined
   let recoveryWork: Promise<void> = Promise.resolve()
   let initialization: Promise<void> | undefined
   let disposed = false
@@ -112,11 +90,10 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
       text,
       revision: 0,
       recoveredRevision: -1,
-      recoveryStatus: 'Saving draft…',
-      diskStatus: disk ? 'Saved to disk' : 'Not saved to disk',
+      recoveryStatus: { kind: 'pending' },
+      diskStatus: disk ? { kind: 'saved', revision: 0 } : { kind: 'unbound' },
       binding: disk,
       baseline: text,
-      diskRevision: disk ? 0 : -1,
     }
     documents.set(id, doc)
     activeId = id
@@ -135,15 +112,16 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
         text: doc.text,
         revision,
         updatedAt: now(),
+        ...(doc.parent ? { parent: doc.parent } : {}),
       }
-      if (doc.parent) record.parent = doc.parent
+      
       try {
         await recovery.put(record)
         doc.recoveredRevision = revision
         doc.recoveryStatus =
-          doc.revision === revision ? 'Draft saved in browser' : 'Saving draft…'
+          doc.revision === revision ? { kind: 'saved', revision } : { kind: 'pending' }
       } catch (cause) {
-        doc.recoveryStatus = 'Browser recovery failed'
+        doc.recoveryStatus = { kind: 'failed' }
         error =
           cause instanceof Error
             ? cause.message
@@ -153,21 +131,21 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
     }
   }
   function flush(): Promise<void> {
-    clearTimeout(timer)
-    timer = undefined
+    cancelRecovery?.()
+    cancelRecovery = undefined
     recoveryWork = recoveryWork.then(persist, persist)
     return recoveryWork
   }
   function schedule() {
-    clearTimeout(timer)
-    timer = setTimeout(() => {
+    cancelRecovery?.()
+    cancelRecovery = options.scheduler.schedule(options.recoveryDelay ?? 250, () => {
       flush().catch(report)
-    }, options.recoveryDelay ?? 250)
+    })
   }
   function changed(doc: DocumentState) {
     doc.revision += 1
-    doc.recoveryStatus = 'Saving draft…'
-    doc.diskStatus = doc.binding ? 'Unsaved changes' : 'Not saved to disk'
+    doc.recoveryStatus = { kind: 'pending' }
+    doc.diskStatus = doc.binding ? { kind: 'dirty' } : { kind: 'unbound' }
     error = null
     schedule()
     emit()
@@ -213,7 +191,7 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
         doc.parent = { actor: record.actor, revision: record.revision }
         doc.revision = record.revision
         doc.recoveredRevision = record.revision
-        doc.recoveryStatus = 'Draft saved in browser'
+        doc.recoveryStatus = { kind: 'saved', revision: record.revision }
       }
       if (originalActive !== null) activeId = originalActive
       else activeId = documents.keys().next().value ?? null
@@ -229,23 +207,22 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
   ) {
     const text = doc.text
     const revision = doc.revision
-    doc.diskStatus = 'Saving to disk…'
+    doc.diskStatus = { kind: 'saving', revision }
     emit()
     try {
       if ((await target.read()) !== baseline) {
         doc.diskStatus =
-          'File changed on disk. Download a copy to keep both versions.'
+          { kind: 'conflict' }
         emit()
         return
       }
       await target.write(text)
       doc.binding = target
       doc.baseline = text
-      doc.diskRevision = revision
       doc.diskStatus =
-        doc.revision === revision ? 'Saved to disk' : 'Unsaved changes'
+        doc.revision === revision ? { kind: 'saved', revision } : { kind: 'dirty' }
     } catch (cause) {
-      doc.diskStatus = 'Disk save failed. Your edits are still here.'
+      doc.diskStatus = { kind: 'failed' }
       error =
         cause instanceof Error
           ? cause.message
@@ -276,7 +253,7 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
         if (result.kind === 'failed') throw result.cause
         const target = result.target
         if (!target) {
-          doc.diskStatus = 'Use Download copy to export this draft'
+          doc.diskStatus = { kind: 'download-required' }
           emit()
           return
         }
@@ -284,7 +261,7 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
           doc.binding === target ? doc.baseline : await target.read()
         await write(doc, target, baseline)
       } catch (cause) {
-        doc.diskStatus = 'Disk save failed. Your edits are still here.'
+        doc.diskStatus = { kind: 'failed' }
         report(cause)
       }
     })
@@ -321,11 +298,11 @@ export function createWorkspace(options: WorkspaceOptions = {}): Workspace {
         report(cause)
       }
     },
-    async importFile(file) {
+    async importDocument(document) {
       try {
-        const text = await file.text()
+        const { name, text } = document
         if (!disposed) {
-          append(file.name, text, null)
+          append(name, text, null)
           await flush()
         }
       } catch (cause) {

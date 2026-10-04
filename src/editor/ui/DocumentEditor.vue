@@ -16,22 +16,20 @@ import {
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { Vim, getCM, vim } from '@replit/codemirror-vim'
-import { markdownHighlight } from '../editor/markdown.ts'
+import { clipboardImages, encodeClipboardImages } from '../images'
+import { addImagePaste, removeImagePaste, pendingImagePastes, imageWidgets } from '../imageExtensions'
+import { markdownHighlight } from '../markdown.ts'
 
-export type SelectionTarget = Readonly<{
-  from: number
-  to: number
-  text: string
-  revision: number
-  documentId: string
-}>
+import type { SelectionTarget } from '../ports'
 const props = defineProps<{
   documentId: string
   text: string
   revision: number
   vimEnabled: boolean
+  encodeImages?: (files: readonly File[]) => Promise<string>
 }>()
 const emit = defineEmits<{
+  error: [error: Error]
   change: [id: string, text: string]
   mode: [mode: string]
   selection: [available: boolean]
@@ -60,6 +58,8 @@ function makeState(text: string) {
       history(),
       drawSelection(),
       markdown(),
+      pendingImagePastes,
+      imageWidgets,
       syntaxHighlighting(markdownHighlight),
       EditorView.lineWrapping,
       placeholder('Start writing. This space is yours.'),
@@ -78,6 +78,7 @@ function makeState(text: string) {
         queueMicrotask(reportMode)
       }),
       EditorView.domEventHandlers({
+        paste: (event) => pasteImages(event),
         keyup: () => {
           queueMicrotask(reportMode)
         },
@@ -120,8 +121,50 @@ watch(
 )
 onBeforeUnmount(() => {
   view?.destroy()
+  view = null
   states.clear()
 })
+function pasteImages(event: ClipboardEvent): boolean {
+  const files = clipboardImages(event.clipboardData)
+  if (!view || !files.length) return false
+  event.preventDefault()
+  const documentId = currentId
+  const id = Symbol('image paste')
+  const { from, to } = view.state.selection.main
+  view.dispatch({ effects: addImagePaste.of({ id, from, to }) })
+  void (props.encodeImages ?? encodeClipboardImages)(files).then((insert) => {
+    if (!view) return
+    const state = documentId === currentId ? view.state : states.get(documentId)
+    const target = state?.field(pendingImagePastes).get(id)
+    if (!state || !target) {
+      emit('error', new Error('The selected passage changed. Paste the image again.'))
+      return
+    }
+    const selection = state.selection.main
+    const transaction = state.update({
+      changes: { from: target.from, to: target.to, insert },
+      selection: selection.from === target.from && selection.to === target.to
+        ? { anchor: target.from + insert.length }
+        : undefined,
+      effects: removeImagePaste.of(id),
+      annotations: isolateHistory.of('full'),
+    })
+    if (documentId === currentId) view.dispatch(transaction)
+    else {
+      states.set(documentId, transaction.state)
+      emit('change', documentId, transaction.state.doc.toString())
+    }
+  }).catch((error: unknown) => {
+    if (!view) return
+    if (documentId === currentId) view.dispatch({ effects: removeImagePaste.of(id) })
+    else {
+      const state = states.get(documentId)
+      if (state) states.set(documentId, state.update({ effects: removeImagePaste.of(id) }).state)
+    }
+    emit('error', error instanceof Error ? error : new Error('The image could not be pasted.'))
+  })
+  return true
+}
 function captureSelection(): SelectionTarget | null {
   if (!view) return null
   const { from, to, empty } = view.state.selection.main

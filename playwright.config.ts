@@ -13,7 +13,7 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 8_000 },
   use: {
-    baseURL: `http://127.0.0.1:5186${process.env['VITE_BASE_PATH'] ?? '/'}`,
+    baseURL: `http://127.0.0.1:${process.env['WRITER_TEST_PORT'] ?? '5186'}${process.env['VITE_BASE_PATH'] ?? '/'}`,
     launchOptions: { timeout: 15_000 },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -23,8 +23,8 @@ export default defineConfig({
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
   ],
   webServer: {
-    command: 'pnpm preview',
-    url: `http://127.0.0.1:5186${process.env['VITE_BASE_PATH'] ?? '/'}`,
+    command: `pnpm preview --port ${process.env['WRITER_TEST_PORT'] ?? '5186'}`,
+    url: `http://127.0.0.1:${process.env['WRITER_TEST_PORT'] ?? '5186'}${process.env['VITE_BASE_PATH'] ?? '/'}`,
     reuseExistingServer: false,
     timeout: 30_000,
   },

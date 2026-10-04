@@ -1,0 +1,14 @@
+<!doctype html>
+<title>IndexedDB query observer fixture</title>
+<script type="module">
+  import { indexedDbRecovery } from '/src/documents/adapters/indexedDbRecovery.ts'
+  const name = new URL(location.href).searchParams.get('database')
+  const recovery = indexedDbRecovery(name)
+  const stop = recovery.drafts.subscribe((state) => {
+    parent.postMessage({ fixture: name, state }, location.origin)
+  })
+  addEventListener('pagehide', () => {
+    stop()
+    recovery.close()
+  })
+</script>

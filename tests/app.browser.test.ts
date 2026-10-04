@@ -1,26 +1,27 @@
 import { afterEach, beforeEach, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
-import Dexie from 'dexie'
+import { deleteDatabase } from './helpers/indexedDb'
 import axe from 'axe-core'
 import App from '../src/App.vue'
+import { createBrowserServices } from '../src/app/bootstrap'
 import '../src/style.css'
 
 beforeEach(async () => {
   await page.viewport(1280, 900)
-  await Dexie.delete('alexopwriter-web')
+  await deleteDatabase('alexopwriter-web')
   localStorage.setItem('alexopwriter-vim', 'false')
   localStorage.setItem('alexopwriter-dark', 'false')
 })
 afterEach(async () => {
   cleanup()
-  await Dexie.delete('alexopwriter-web')
+  await deleteDatabase('alexopwriter-web')
   localStorage.removeItem('alexopwriter-vim')
   localStorage.removeItem('alexopwriter-dark')
 })
 
 test('the real writing review corrects the document and undo restores the original', async () => {
-  await render(App)
+  await render(App, { props: { services: createBrowserServices() } })
   const editor = page.getByRole('textbox', { name: 'Document editor' })
   await editor.fill('In order to write, begin with one sentence.')
   await page.getByRole('button', { name: 'Writing checks' }).click()
@@ -39,7 +40,7 @@ test('the real writing review corrects the document and undo restores the origin
 })
 
 test('the full writing screen and review drawer pass accessibility checks in both themes', async () => {
-  await render(App)
+  await render(App, { props: { services: createBrowserServices() } })
   await page
     .getByRole('textbox', { name: 'Document editor' })
     .fill('In order to write, begin with one sentence.')
@@ -56,7 +57,7 @@ test('the full writing screen and review drawer pass accessibility checks in bot
 })
 
 test('Markdown formats as it is typed without changing the editable source', async () => {
-  await render(App)
+  await render(App, { props: { services: createBrowserServices() } })
   const editor = page.getByRole('textbox', { name: 'Document editor' })
   const source = '# A heading\n\n## A subheading\n\nPlain **bold** and *italic*.\n\n> A quotation\n\n[Link](https://example.com)\n\n- A list item'
   await editor.fill(source)
@@ -81,4 +82,56 @@ test('Markdown formats as it is typed without changing the editable source', asy
   await userEvent.keyboard(`{${modifier}>}z{/${modifier}}`)
   await expect.poll(() => style('.fs-md-h1').fontSize).toBe('30.6px')
   expect(editor.element().textContent).toBe(source.replaceAll('\n', ''))
+})
+
+test.each([false, true])('the connected suggestion workflow reports acceptance after download (stale=%s)', async stale => {
+  const { testWorkspace } = await import('./support/workspace')
+  const { controlledAssistant } = await import('./support/controlledAssistant')
+  const control = controlledAssistant()
+  await render(App, { props: { services: { workspace: testWorkspace(), assistant: control.assistant } } })
+  const editor = page.getByRole('textbox', { name: 'Document editor' })
+  await editor.fill('An original passage.')
+  const modifier = navigator.platform.includes('Mac') ? 'Meta' : 'Control'
+  await editor.click()
+  await userEvent.keyboard(`{${modifier}>}a{/${modifier}}`)
+  await page.getByRole('button', { name: 'Local writing help' }).click()
+  await page.getByRole('button', { name: 'Make it clearer' }).click()
+  expect(control.requests[0]?.text).toBe('An original passage.')
+  control.requests[0]?.resolve('A clearer passage.')
+  await expect.element(page.getByRole('button', { name: 'Accept', exact: true })).toBeVisible()
+  if (stale) await page.getByRole('textbox', { name: 'Document name' }).fill('Renamed.md')
+  await page.getByRole('button', { name: 'Download copy' }).click()
+  await expect.element(page.getByText('Download requested. Your original file is unchanged.')).toBeVisible()
+  await page.getByRole('button', { name: 'Accept', exact: true }).click()
+  if (stale) {
+    await expect.element(page.getByText('Your document changed. Select the passage and request a fresh suggestion.')).toBeVisible()
+    await expect.element(editor).toHaveTextContent('An original passage.')
+    return
+  }
+  await expect.element(page.getByText('Suggestion applied. Undo will restore your original.')).toBeVisible()
+  await expect.element(editor).toHaveTextContent('A clearer passage.')
+  await editor.click()
+  await userEvent.keyboard(`{${modifier}>}z{/${modifier}}`)
+  await expect.element(editor).toHaveTextContent('An original passage.')
+})
+
+test('switching documents rejects late suggestions through the real application wiring', async () => {
+  const { testWorkspace } = await import('./support/workspace')
+  const { controlledAssistant } = await import('./support/controlledAssistant')
+  const control = controlledAssistant()
+  await render(App, { props: { services: { workspace: testWorkspace(), assistant: control.assistant } } })
+  const editor = page.getByRole('textbox', { name: 'Document editor' })
+  await editor.fill('Keep my passage.')
+  const modifier = navigator.platform.includes('Mac') ? 'Meta' : 'Control'
+  await editor.click()
+  await userEvent.keyboard(`{${modifier}>}a{/${modifier}}`)
+  await page.getByRole('button', { name: 'Local writing help' }).click()
+  await page.getByRole('button', { name: 'Make it clearer' }).click()
+  await page.getByRole('button', { name: 'Download copy' }).click()
+  await page.getByRole('button', { name: 'New document', exact: true }).click()
+  await expect.element(page.getByRole('button', { name: 'Dismiss notification' })).not.toBeInTheDocument()
+  control.requests[0]?.resolve('Late replacement.')
+  await expect.element(page.getByRole('button', { name: 'Accept', exact: true })).not.toBeInTheDocument()
+  await expect.element(editor).toHaveTextContent('Start writing. This space is yours.')
+  expect(control.cancellations()).toBe(1)
 })

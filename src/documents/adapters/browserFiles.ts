@@ -1,17 +1,4 @@
-export type DiskBinding = {
-  read(): Promise<string>
-  write(text: string): Promise<void>
-}
-export type OpenedFile = {
-  name: string
-  text: string
-  binding: DiskBinding | null
-}
-export type FileAccess = {
-  open(): Promise<OpenedFile | null>
-  saveAs(name: string): Promise<DiskBinding | null>
-  download(name: string, text: string): void
-}
+import type { DiskBinding, OpenedFile, FileAccess } from '../application/ports'
 export type NativeFileHandle = {
   name: string
   getFile(): Promise<File>

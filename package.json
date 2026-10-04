@@ -14,8 +14,9 @@
     "test:e2e": "bddgen && playwright test --project chromium",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e",
     "test:model": "playwright test --config playwright.model.config.ts",
-    "lint": "oxlint . --deny-warnings --report-unused-disable-directives && eslint \"src/**/*.vue\" --max-warnings 0",
-    "test:compat": "bddgen && playwright test"
+    "lint": "pnpm check:architecture && oxlint . --deny-warnings --report-unused-disable-directives && eslint \"src/**/*.vue\" --max-warnings 0",
+    "test:compat": "bddgen && playwright test",
+    "check:architecture": "node --experimental-strip-types tooling/checkArchitecture.ts"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.0",
@@ -27,7 +28,6 @@
     "@huggingface/transformers": "4.3.0",
     "@lucide/vue": "1.41.0",
     "@replit/codemirror-vim": "6.4.0",
-    "dexie": "4.4.6",
     "onnxruntime-web": "1.31.0-dev.20260914-8d85527a0",
     "vue": "3.5.42",
     "zod": "4.5.2",
