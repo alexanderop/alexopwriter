@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 import { createBdd, test } from 'playwright-bdd'
 const { Given, When, Then } = createBdd(test)
-const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDaAAAAAASUVORK5CYII='
+const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
 const source = `data:image/png;base64,${png}`
 
 Given('I open an empty image writing workspace', async ({ page }) => {
@@ -16,7 +16,11 @@ When('I paste a copied image into my document', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Document editor' }).evaluate((editor, bytes) => {
     const data = new DataTransfer()
     data.items.add(new File([Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0))], 'copied.png', { type: 'image/png' }))
-    editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+    const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })
+    const image = event.clipboardData?.files[0]
+    if (event.clipboardData?.files.length !== 1 || image?.type !== 'image/png' || image.size === 0)
+      throw new Error('Synthetic paste must carry one nonempty PNG file in clipboardData')
+    editor.dispatchEvent(event)
   }, png)
 })
 Then('the pasted image is displayed and saved in browser recovery', async ({ page }) => {

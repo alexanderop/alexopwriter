@@ -6,7 +6,7 @@ import DocumentEditor from '../src/components/DocumentEditor.vue'
 import { encodeClipboardImages } from '../src/editor/images'
 import { browserFiles } from '../src/documents/files'
 
-const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDaAAAAAASUVORK5CYII='
+const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='
 const markup = `![Pasted image](data:image/png;base64,${png})`
 const file = () => new File([Uint8Array.from(atob(png), (c) => c.charCodeAt(0))], 'image.png', { type: 'image/png' })
 function paste(files: File[]) {
