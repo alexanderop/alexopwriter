@@ -69,7 +69,7 @@ function preference(key: string, fallback: boolean): boolean {
     return fallback
   }
 }
-const dark = ref(preference('alexopwriter-dark', false))
+const dark = ref(preference('alexopwriter-dark', true))
 const vimEnabled = ref(preference('alexopwriter-vim', true))
 watch([dark, vimEnabled], () => {
   try {
