@@ -24,11 +24,19 @@ import {
   ArrowRight,
   FileText,
 } from '@lucide/vue'
+import { saveBeforeUpdate, type RegisterAppUpdate } from './appUpdate'
 import { embeddedImages, imageAwareWordCount } from './editor/images'
 import DocumentEditor from './components/DocumentEditor.vue'
 import type { SelectionTarget } from './components/DocumentEditor.vue'
 import { createWorkspace } from './documents/workspace'
 import { checkWriting, createLocalAssistant, MODEL_INFO } from './assistance'
+const props = defineProps<{ registerUpdates?: RegisterAppUpdate }>()
+const updateAvailable = ref(false)
+const updating = ref(false)
+const workspaceReady = ref(false)
+let updateActivated = false
+let updateRequested = false
+let activateUpdate: (() => Promise<void>) | undefined
 const workspace = createWorkspace()
 const state = shallowRef(workspace.snapshot())
 const assistant = createLocalAssistant()
@@ -121,13 +129,51 @@ function shortcut(event: KeyboardEvent) {
     if (active.value) void workspace.save(active.value.id).catch(reportError)
   }
 }
+async function reloadUpdatedApp() {
+  try {
+    await saveBeforeUpdate(workspace, () => editor.value?.hasPendingImages() ?? false)
+    window.location.reload()
+  } catch (error) {
+    reportError(error instanceof Error ? error : new Error('Could not update the app.'))
+  }
+}
+async function applyUpdate() {
+  if (updating.value || !workspaceReady.value) return
+  updating.value = true
+  try {
+    await saveBeforeUpdate(workspace, () => editor.value?.hasPendingImages() ?? false)
+    if (updateActivated) window.location.reload()
+    else {
+      updateRequested = true
+      await activateUpdate?.()
+    }
+  } catch (error) {
+    updateRequested = false
+    reportError(error instanceof Error ? error : new Error('Could not update the app.'))
+  } finally {
+    updating.value = false
+  }
+}
 onMounted(async () => {
+  activateUpdate = props.registerUpdates?.({
+    onNeedRefresh() { updateAvailable.value = true },
+    onNeedReload() {
+      updateActivated = true
+      updateAvailable.value = true
+      // Another tab may activate the worker. Reload only after this tab asks.
+      if (updateRequested) {
+        updateRequested = false
+        void reloadUpdatedApp()
+      }
+    },
+  })
   window.addEventListener('beforeunload', beforeUnload)
   document.addEventListener('visibilitychange', visibilityChanged)
   window.addEventListener('keydown', shortcut)
   try {
     await workspace.initialize()
     if (!workspace.snapshot().documents.length) await workspace.create()
+    workspaceReady.value = true
   } catch (error) {
     reportError(
       error instanceof Error ? error : new Error('Could not open workspace.'),
@@ -314,6 +360,12 @@ async function removeModel() {
         </button>
       </nav>
     </header>
+    <div v-if="updateAvailable" class="update-banner" role="status">
+      <span>A new version is ready. Update reloads the app after saving your drafts.</span>
+      <button :disabled="updating || !workspaceReady" @click="applyUpdate">
+        {{ updating ? 'Saving drafts…' : 'Update app' }}
+      </button>
+    </div>
     <input
       ref="importer"
       type="file"

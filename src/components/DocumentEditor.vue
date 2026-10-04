@@ -208,7 +208,12 @@ function selectRange(from: number, to: number): SelectionTarget | null {
   view.focus()
   return captureSelection()
 }
+function hasPendingImages(): boolean {
+  return Boolean(view?.state.field(pendingImagePastes).size) ||
+    [...states.entries()].some(([id, state]) => id !== currentId && state.field(pendingImagePastes).size > 0)
+}
 defineExpose({
+  hasPendingImages,
   captureSelection,
   applyReplacement,
   selectRange,

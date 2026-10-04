@@ -173,3 +173,18 @@ test('a replacement spanning a pending caret cancels insertion', async () => {
   await expect.poll(() => error.value).toContain('selected passage changed')
   expect(texts.value['a']).toBe('Newer')
 })
+
+test('returning to a document before its paste completes clears the update guard', async () => {
+  let finish: (value: string) => void = () => undefined
+  const { id, editor } = await harness(() => new Promise((resolve) => { finish = resolve }))
+  paste([file()])
+  expect(editor.value?.hasPendingImages()).toBe(true)
+  id.value = 'b'
+  await expect.element(page.getByRole('textbox')).toHaveTextContent('Second')
+  expect(editor.value?.hasPendingImages()).toBe(true)
+  id.value = 'a'
+  await expect.element(page.getByRole('textbox')).not.toHaveTextContent('Second')
+  finish(markup)
+  await expect.element(page.getByRole('img')).toBeVisible()
+  expect(editor.value?.hasPendingImages()).toBe(false)
+})

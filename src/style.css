@@ -614,3 +614,20 @@ progress {
   vertical-align: middle;
   border-radius: 4px;
 }
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 20px;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.update-banner button {
+  text-decoration: underline;
+  font-weight: 600;
+}
