@@ -18,8 +18,8 @@ Implement audit priorities 1 through 8. Writing supports sentence and paragraph 
 - [x] Integrate app controls and keyboard navigation.
 - [x] Verify browser journeys, offline behavior, and narrow layouts.
 - [x] Phase D: Keep the audit trail.
-- [ ] Phase E: Verify and hand back.
-- [ ] Independently review the complete diff, fix findings, and merge to main.
+- [x] Phase E: Verify and hand back.
+- [x] Independently review the complete diff, fix findings, and merge to main.
 
 ## Throughput checkpoint
 
@@ -33,4 +33,6 @@ Baseline commit is `7b5da0c8f6007e0b9cf8c2f9841828c5a13d4d0c`. The checkout was 
 
 The full Pages-path verification passed 195 logic and browser tests plus 25 Chromium journeys. The CLI integration checks passed all three cases after adding the new export scenario to their expected count. Independent review found no remaining P1 or P2 defects after fixes. Desktop preview, quiet writing, and mobile settings screenshots were inspected. Native print-dialog acceptance and browser spelling dictionary accuracy are not asserted by the automated checks.
 
-Firefox could not launch on this Mac. Linux CI will provide the cross-browser delivery gate. No production code was changed to bypass that local infrastructure failure.
+Firefox could not launch on this Mac. Linux CI passed all 50 Chromium and Firefox journeys. No production code was changed to bypass the local infrastructure failure.
+
+The preflight run [37267766827](https://github.com/alexanderop/alexopwriter/actions/runs/37267766827) passed on implementation commit `b6ab5e5`, including all three CLI verification checks. Main was fast-forwarded to the verified implementation. The following documentation-only commit records the result. The main-branch workflow independently verifies and deploys the delivered commit.
