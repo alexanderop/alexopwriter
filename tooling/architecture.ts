@@ -105,7 +105,11 @@ export function inspectArchitecture(
         !origin.startsWith('shared/ui/')
       )
         report(`UI primitives belong in shared/ui: ${specifier}`)
-      if (pure) report(`Core modules cannot import external dependencies: ${specifier}`)
+      const markdownParser =
+        origin === 'features/reading/domain/markdown.ts' &&
+        (specifier === 'markdown-it' || specifier.startsWith('markdown-it/'))
+      if (pure && !markdownParser)
+        report(`Core modules cannot import external dependencies: ${specifier}`)
       return
     }
     const destination = relative(root, target)

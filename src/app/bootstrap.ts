@@ -1,3 +1,5 @@
+import { createBrowserDocumentExport } from '../features/reading/adapters/browserExport'
+import type { DocumentExport } from '../features/reading'
 import type { ImageCaption, ModelFiles } from '../features/assistance'
 import { createImageCaption } from '../features/assistance/adapters/imageCaption'
 import { inspectModelFiles } from '../features/assistance/adapters/modelAssets'
@@ -27,6 +29,7 @@ export function createBrowserWorkspace() {
 }
 
 export type WriterServices = {
+  readonly documentExport: DocumentExport
   readonly workspace: Workspace
   readonly assistant: LocalAssistant
   readonly captions: ImageCaption
@@ -34,6 +37,7 @@ export type WriterServices = {
 }
 export function createBrowserServices(): WriterServices {
   return {
+    documentExport: createBrowserDocumentExport(),
     workspace: createBrowserWorkspace(),
     captions: createImageCaption(),
     inspectWritingFiles: () => inspectModelFiles('writing'),

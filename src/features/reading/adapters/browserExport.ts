@@ -1,5 +1,11 @@
 import { createHtmlDocument } from '../html'
-import type { DocumentExport, ExportSource } from '../domain/markdown'
+import type { Token } from 'markdown-it'
+import {
+  embeddedRaster,
+  parseDocument,
+  type DocumentExport,
+  type ExportSource,
+} from '../domain/markdown'
 
 export type PrintDocument = (frame: HTMLIFrameElement) => Promise<void>
 
@@ -63,6 +69,49 @@ async function printDocument(html: string, print: PrintDocument): Promise<void> 
   }
 }
 
+async function webpToPng(source: string): Promise<string> {
+  const image = new Image()
+  image.src = source
+  try {
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = image.naturalWidth
+    canvas.height = image.naturalHeight
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Canvas is unavailable.')
+    context.drawImage(image, 0, 0)
+    const png = canvas.toDataURL('image/png')
+    if (!png.startsWith('data:image/png;base64,')) throw new Error('PNG encoding failed.')
+    return png
+  } catch (cause) {
+    throw new Error('An embedded WebP image could not be converted for Word export.', { cause })
+  }
+}
+
+export async function createBrowserDocxDocument(source: ExportSource): Promise<ArrayBuffer> {
+  const { tokens } = parseDocument(source.text)
+  const converted = new Map<string, string>()
+  const prepareImages = async (items: readonly Token[]): Promise<void> => {
+    for (const token of items) {
+      if (token.type === 'image') {
+        const url = String(token.attrGet('src') ?? '')
+        if (embeddedRaster(url)?.[1]?.toLowerCase() === 'webp') {
+          let png = converted.get(url)
+          if (!png) {
+            png = await webpToPng(url)
+            converted.set(url, png)
+          }
+          token.attrSet('src', png)
+        }
+      }
+      if (token.children) await prepareImages(token.children)
+    }
+  }
+  await prepareImages(tokens)
+  const { createDocxDocument } = await import('../docx')
+  return createDocxDocument(source, tokens)
+}
+
 export function createBrowserDocumentExport(print: PrintDocument = browserPrint): DocumentExport {
   return {
     async export(source: ExportSource, format) {
@@ -76,8 +125,7 @@ export function createBrowserDocumentExport(print: PrintDocument = browserPrint)
           `${filename}.html`,
         )
       } else {
-        const { createDocxDocument } = await import('../docx')
-        const data = await createDocxDocument(source)
+        const data = await createBrowserDocxDocument(source)
         download(
           new Blob([data], {
             type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

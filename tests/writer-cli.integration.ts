@@ -57,7 +57,7 @@ test(
     const { code, summary, stderr } = await invoke(['verify', 'import-export'])
     assert.equal(code, 0, stderr)
     assert.equal(summary.status, 'passed')
-    assert.deepEqual(summary.counts, { passed: 3, failed: 0, skipped: 0, flaky: 0 })
+    assert.deepEqual(summary.counts, { passed: 4, failed: 0, skipped: 0, flaky: 0 })
     assert.equal(summary.basePath, '/alexopwriter/')
     assert.ok(summary.artifacts.some((path: string) => path.endsWith('/trace.zip')))
     assert.ok(summary.artifacts.some((path: string) => path.endsWith('.png')))

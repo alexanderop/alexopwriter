@@ -166,12 +166,13 @@ it('loads old records with defaults and retains different library states of iden
       trashedAt: 2,
       updatedAt: 2,
     })
-    expect((await storage.list()).find((record) => record.actor === 'old')).toMatchObject({
+    expect((await storage.list()).find((record) => record.actor === 'old')).toEqual(legacy)
+    await workspace.initialize()
+    expect(workspace.snapshot().documents.find((doc) => doc.trashedAt === null)).toMatchObject({
       folder: '',
       favorite: false,
       trashedAt: null,
     })
-    await workspace.initialize()
     expect(workspace.snapshot().documents).toHaveLength(2)
     const active = workspace.snapshot().activeId
     if (!active) throw new Error('Nontrashed branch must remain active')

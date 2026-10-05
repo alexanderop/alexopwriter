@@ -20,6 +20,8 @@ Preconditions: `pnpm writer doctor` succeeds; scenarios supply their own tempora
 - **Rename and roundtrip:** The same command renames Unicode Markdown, verifies the suggested filename and exact bytes, reimports the download, and verifies a second download.
 - **Import again:** The same command reimports the original file after edits and checks the restored baseline in the editor and download. Inspect downloaded attachments in the report.
 
+The writing-experience journey opens preview offline, returns to editing with undo intact, and downloads HTML and DOCX. It inspects HTML contents and the DOCX archive signature. Logic and Browser Mode tests inspect Word formatting and embedded images. The Print / Save PDF button opens the browser print dialog; native dialog acceptance remains a separate check.
+
 ## Gotchas
 
 - The harness uses the accessible **Import document** file input behind **Import file**. It does not automate native permission dialogs.

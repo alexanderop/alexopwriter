@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { BaseButton } from '../../../shared/ui/button'
 import { BaseInput } from '../../../shared/ui/input'
 import { BaseSelect } from '../../../shared/ui/select'
@@ -29,6 +29,10 @@ const folders = computed(() =>
     ),
   ].sort(),
 )
+watch(folders, (names) => {
+  if (section.value.startsWith('folder:') && !names.includes(section.value.slice(7)))
+    section.value = 'all'
+})
 const visible = computed(() =>
   selectLibrary(props.documents, {
     query: query.value,
@@ -80,7 +84,7 @@ function assignFolder(id: string, event: Event) {
           @click="emit('activate', document.id)"
         >
           <FileText :size="15" /><span>{{ document.name }}</span
-          ><Star v-if="document.favorite" :size="12" aria-label="Favorite" />
+          ><Star v-if="document.favorite" :size="12" aria-hidden="true" />
         </BaseButton>
         <span v-else class="trash-name">{{ document.name }}</span>
         <div

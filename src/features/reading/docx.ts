@@ -146,8 +146,10 @@ function inlineRuns(tokens: readonly Token[]): ParagraphChild[] {
 
 type List = { reference: string; level: number; firstParagraph: boolean }
 
-export async function createDocxDocument(source: ExportSource): Promise<ArrayBuffer> {
-  const { tokens } = parseDocument(source.text)
+export async function createDocxDocument(
+  source: ExportSource,
+  tokens: readonly Token[] = parseDocument(source.text).tokens,
+): Promise<ArrayBuffer> {
   const children: (Paragraph | Table)[] = []
   const numbering: { reference: string; levels: ILevelsOptions[] }[] = []
   const lists: List[] = []

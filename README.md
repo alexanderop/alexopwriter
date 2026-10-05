@@ -135,3 +135,13 @@ Reusable controls live in `src/shared/ui`. They use Reka UI and Tailwind with sh
 ## Formatting
 
 Run `pnpm format` to format source, tests, configuration, and documentation with Oxfmt. Run `pnpm format:check` to check without writing. `pnpm verify` checks formatting first, including in CI. Generated and ignored files, the pnpm lockfile, and the unrelated `tamagotchi` directory are excluded.
+
+## Focus, reading, and organization
+
+New users can type immediately. Vim is optional and retains any saved preference. Settings provides typeface, text size, line width, sentence or paragraph focus, typewriter scrolling, and browser spelling language. Browser spellcheck uses the dictionaries available on the device.
+
+Focus mode hides surrounding controls. Press Escape or choose Exit focus to return. Find and replace supports undo. Quick navigation searches documents or jumps to a heading. Settings includes keyboard shortcut help.
+
+The library searches names and text, sorts documents, and filters folders and favorites. Moving a draft to Trash preserves its text and allows restoration. Folder names organize browser drafts and do not create disk directories. These changes do not overwrite original files.
+
+Preview supports side-by-side and reading views while retaining editor history. Export offers standalone HTML, a Word document, or the browser print dialog for saving PDF. Output is generated on the device. Preview and HTML output render embedded raster images; remote images remain labelled placeholders. DOCX supports common Markdown blocks and embedded raster images. WebP images convert to PNG on the device. Remote images retain their descriptions.

@@ -4,6 +4,10 @@ import { Plus } from '@lucide/vue'
 import { BaseButton, buttonVariants, type ButtonVariant } from '../shared/ui/button'
 import { BaseInput } from '../shared/ui/input'
 import { BaseTextarea } from '../shared/ui/textarea'
+import { BaseSelect } from '../shared/ui/select'
+import { BaseDialog } from '../shared/ui/dialog'
+const dialogOpen = ref(false)
+const typeface = ref('mono')
 const dark = ref(false)
 const name = ref('A quiet place to write')
 const description = ref('Shared components keep every feature consistent.')
@@ -61,6 +65,18 @@ const variants = Object.keys(buttonVariants) as ButtonVariant[]
         <label class="grid content-start gap-2"
           >Image description<BaseTextarea v-model="description" rows="3"
         /></label>
+      </section>
+      <section class="space-y-4" aria-label="Selection and dialogs">
+        <label class="grid content-start gap-2"
+          >Typeface<BaseSelect v-model="typeface"
+            ><option value="mono">Mono</option>
+            <option value="serif">Serif</option></BaseSelect
+          ></label
+        >
+        <BaseButton @click="dialogOpen = true">Open example dialog</BaseButton>
+        <BaseDialog v-model:open="dialogOpen" title="A focused choice"
+          ><BaseInput aria-label="Example name" placeholder="Name"
+        /></BaseDialog>
       </section>
       <section aria-labelledby="tokens-heading">
         <h2 id="tokens-heading">Colors</h2>

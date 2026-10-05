@@ -2,6 +2,18 @@
 import { BaseInput } from '../shared/ui/input'
 import { BaseTextarea } from '../shared/ui/textarea'
 import { BaseButton } from '../shared/ui/button'
+import { BaseDialog } from '../shared/ui/dialog'
+import QuickNavigation from './QuickNavigation.vue'
+import { writingShortcuts } from './shortcuts'
+import {
+  defaultWritingPreferences,
+  parseWritingPreferences,
+  writingStyle,
+  type WritingPreferences,
+} from '../features/editor'
+import { WritingSettings } from '../features/editor/ui'
+import { DocumentPreview } from '../features/reading/ui'
+import type { ExportFormat } from '../features/reading'
 import {
   computed,
   nextTick,
@@ -26,6 +38,10 @@ import {
   Feather,
   SlidersHorizontal,
   ArrowRight,
+  Search,
+  Compass,
+  BookOpen,
+  FileOutput,
 } from '@lucide/vue'
 import { DocumentEditor, embeddedImages, imageAwareWordCount } from '../features/editor/ui'
 import { hasUnsecuredChanges } from '../features/documents'
@@ -73,6 +89,94 @@ const editor = useTemplateRef<InstanceType<typeof DocumentEditor>>('editor')
 const importer = useTemplateRef<HTMLInputElement>('importer')
 const sidebar = ref(window.matchMedia('(min-width: 581px)').matches)
 const focusMode = ref(false)
+const viewMode = ref<'write' | 'split' | 'read'>('write')
+const navigationOpen = ref(false)
+const shortcutsOpen = ref(false)
+const exportOpen = ref(false)
+const exporting = ref(false)
+function readWritingPreferences(): WritingPreferences {
+  try {
+    return parseWritingPreferences(
+      JSON.parse(localStorage.getItem('alexopwriter-writing') ?? 'null'),
+    )
+  } catch {
+    return { ...defaultWritingPreferences }
+  }
+}
+const writingPreferences = ref<WritingPreferences>(readWritingPreferences())
+watch(
+  writingPreferences,
+  (value) => {
+    try {
+      localStorage.setItem('alexopwriter-writing', JSON.stringify(value))
+    } catch {
+      return
+    }
+  },
+  { deep: true },
+)
+const previewHost = useTemplateRef<HTMLElement>('previewHost')
+function focusEditor() {
+  void nextTick(() => {
+    if (viewMode.value === 'read') previewHost.value?.querySelector<HTMLElement>('article')?.focus()
+    else editor.value?.focus()
+  })
+}
+function readOnly() {
+  viewMode.value = 'read'
+  focusEditor()
+}
+function toggleFocus() {
+  focusMode.value = !focusMode.value
+  if (focusMode.value) {
+    closePanel()
+    viewMode.value = 'write'
+  }
+  focusEditor()
+}
+function togglePreview() {
+  focusMode.value = false
+  viewMode.value = viewMode.value === 'write' ? 'split' : 'write'
+  if (viewMode.value === 'write') focusEditor()
+}
+function findText() {
+  viewMode.value = 'write'
+  void nextTick(() => editor.value?.openSearch())
+}
+function navigateHeading(from: number, to: number) {
+  viewMode.value = 'write'
+  void nextTick(() => editor.value?.selectRange(from, to))
+}
+async function exportDocument(format: ExportFormat) {
+  if (!active.value || exporting.value) return
+  const source = { name: active.value.name, text: active.value.text }
+  exporting.value = true
+  try {
+    await services.documentExport.export(source, format)
+    exportOpen.value = false
+  } catch (error) {
+    reportError(error instanceof Error ? error : new Error('Could not export document.'))
+  } finally {
+    exporting.value = false
+  }
+}
+function setFavorite(id: string, value: boolean) {
+  workspace.setFavorite(id, value)
+}
+function moveToFolder(id: string, value: string) {
+  workspace.moveToFolder(id, value)
+}
+function trashDocument(id: string) {
+  if (editor.value?.hasPendingImages()) {
+    notice.value = 'Wait for the image paste to finish before moving a document to Trash.'
+    return
+  }
+  workspace.trash(id)
+}
+function restoreDocument(id: string) {
+  workspace.restoreDocument(id)
+}
+
 function preference(key: string, fallback: boolean): boolean {
   try {
     const value = localStorage.getItem(key)
@@ -82,7 +186,7 @@ function preference(key: string, fallback: boolean): boolean {
   }
 }
 const dark = ref(preference('alexopwriter-dark', true))
-const vimEnabled = ref(preference('alexopwriter-vim', true))
+const vimEnabled = ref(preference('alexopwriter-vim', false))
 watch([dark, vimEnabled], () => {
   try {
     localStorage.setItem('alexopwriter-dark', String(dark.value))
@@ -139,6 +243,7 @@ async function refreshModels() {
   ])
 }
 function openSettings() {
+  focusMode.value = false
   if (imageTarget.value) closeImage()
   panel.value = 'settings'
   void nextTick(() => panelHost.value?.focus())
@@ -246,11 +351,39 @@ function visibilityChanged() {
   if (document.visibilityState === 'hidden') void workspace.flush().catch(reportError)
 }
 function shortcut(event: KeyboardEvent) {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+  if (event.defaultPrevented || event.isComposing) return
+  if (event.key === 'Escape') {
+    if (navigationOpen.value || exportOpen.value || shortcutsOpen.value) return
+    if (panel.value) closePanel()
+    else if (focusMode.value) {
+      focusMode.value = false
+      focusEditor()
+    }
+    return
+  }
+  if (!(event.metaKey || event.ctrlKey) || event.altKey) return
+  const key = event.key.toLowerCase()
+  if (key === 's' && !event.shiftKey) {
     event.preventDefault()
     if (active.value) void workspace.save(active.value.id).catch(reportError)
+  } else if (key === 'k' && !event.shiftKey) {
+    event.preventDefault()
+    navigationOpen.value = !navigationOpen.value
+  } else if (key === 'f' && event.shiftKey) {
+    event.preventDefault()
+    toggleFocus()
+  } else if (key === 'p' && event.shiftKey) {
+    event.preventDefault()
+    togglePreview()
+  } else if (key === ',' && !event.shiftKey) {
+    event.preventDefault()
+    openSettings()
+  } else if (key === '/' && !event.shiftKey) {
+    event.preventDefault()
+    shortcutsOpen.value = !shortcutsOpen.value
   }
 }
+
 async function reloadUpdatedApp() {
   try {
     await saveBeforeUpdate(workspace, () => editor.value?.hasPendingImages() ?? false)
@@ -337,6 +470,8 @@ function toggleDocuments() {
 }
 function activateDocument(id: string) {
   workspace.activate(id)
+  if (window.matchMedia('(max-width: 760px)').matches) sidebar.value = false
+  focusEditor()
 }
 function togglePanel(next: 'review' | 'assist') {
   if (imageTarget.value) closeImage()
@@ -376,8 +511,12 @@ async function removeModel() {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ dark, focused: focusMode }">
-    <header class="topbar">
+  <div
+    class="app-shell"
+    :class="{ dark, focused: focusMode }"
+    :style="writingStyle(writingPreferences)"
+  >
+    <header v-if="!focusMode" class="topbar">
       <div class="brand-group">
         <BaseButton
           size="icon"
@@ -414,6 +553,38 @@ async function removeModel() {
         <BaseButton size="icon" aria-label="Download copy" :disabled="!active" @click="download">
           <Download :size="16" />
         </BaseButton>
+        <BaseButton
+          size="icon"
+          aria-label="Find and replace"
+          title="Find and replace"
+          :disabled="!active"
+          @click="findText"
+          ><Search :size="16"
+        /></BaseButton>
+        <BaseButton
+          size="icon"
+          aria-label="Quick navigation"
+          title="Quick navigation"
+          @click="navigationOpen = true"
+          ><Compass :size="16"
+        /></BaseButton>
+        <BaseButton
+          size="icon"
+          aria-label="Toggle preview"
+          title="Preview"
+          :aria-pressed="viewMode !== 'write'"
+          :disabled="!active"
+          @click="togglePreview"
+          ><BookOpen :size="16"
+        /></BaseButton>
+        <BaseButton
+          size="icon"
+          aria-label="Export document"
+          title="Export document"
+          :disabled="!active"
+          @click="exportOpen = true"
+          ><FileOutput :size="16"
+        /></BaseButton>
         <span class="toolbar-divider" />
         <div class="page-tools">
           <BaseButton
@@ -447,12 +618,17 @@ async function removeModel() {
           size="icon"
           aria-label="Focus mode"
           :aria-pressed="focusMode"
-          @click="focusMode = !focusMode"
+          @click="toggleFocus"
         >
           <Minimize v-if="focusMode" :size="17" /><Maximize v-else :size="17" />
         </BaseButton>
       </nav>
     </header>
+    <div v-if="focusMode" class="focus-exit">
+      <BaseButton aria-label="Focus mode" :aria-pressed="true" @click="toggleFocus"
+        >Exit focus</BaseButton
+      >
+    </div>
     <div v-if="updateAvailable" class="update-banner" role="status">
       <span>A new version is ready. Update reloads the app after saving your drafts.</span>
       <BaseButton :disabled="updating || !workspaceReady" @click="applyUpdate">
@@ -478,33 +654,58 @@ async function removeModel() {
         @create="workspace.create()"
         @activate="activateDocument"
         @import="importer?.click()"
+        @favorite="setFavorite"
+        @folder="moveToFolder"
+        @trash="trashDocument"
+        @restore="restoreDocument"
       />
-      <main class="writing-area">
-        <div v-if="active" class="page">
-          <DocumentEditor
-            ref="editor"
-            :document-id="active.id"
-            :text="active.text"
-            :revision="active.revision"
-            :vim-enabled="vimEnabled"
-            @change="changed"
-            @error="reportError"
-            @mode="mode = $event"
-            @selection="selected = $event"
-            @image="openImage"
-          />
+      <div class="document-workspace" :class="`view-${viewMode}`">
+        <div v-if="viewMode !== 'write'" class="reading-tools" aria-label="Reading view">
+          <BaseButton :aria-pressed="viewMode === 'split'" @click="viewMode = 'split'"
+            >Side by side</BaseButton
+          >
+          <BaseButton :aria-pressed="viewMode === 'read'" @click="readOnly">Read only</BaseButton>
+          <BaseButton @click="togglePreview">Close preview</BaseButton>
         </div>
-        <div v-else class="empty-state">
-          <Feather :size="32" />
-          <h1>A little room to think.</h1>
-          <p>Open a file or start with a blank page.</p>
-          <BaseButton @click="workspace.create()">
-            Start writing <ArrowRight :size="15" />
-          </BaseButton>
+        <div class="document-panes">
+          <main v-show="viewMode !== 'read'" class="writing-area">
+            <div v-if="active" class="page">
+              <DocumentEditor
+                ref="editor"
+                :document-id="active.id"
+                :text="active.text"
+                :revision="active.revision"
+                :vim-enabled="vimEnabled"
+                :preferences="writingPreferences"
+                :focus-enabled="focusMode"
+                @change="changed"
+                @error="reportError"
+                @mode="mode = $event"
+                @selection="selected = $event"
+                @image="openImage"
+              />
+            </div>
+            <div v-else class="empty-state">
+              <Feather :size="32" />
+              <h1>A little room to think.</h1>
+              <p>Open a file or start with a blank page.</p>
+              <BaseButton @click="workspace.create()">
+                Start writing <ArrowRight :size="15" />
+              </BaseButton>
+            </div>
+          </main>
+          <section
+            v-if="viewMode !== 'write' && active"
+            ref="previewHost"
+            class="preview-pane"
+            aria-label="Document preview"
+          >
+            <DocumentPreview :text="active.text" :name="active.name" />
+          </section>
         </div>
-      </main>
+      </div>
       <aside
-        v-if="panel === 'image' || panel === 'settings'"
+        v-if="!focusMode && (panel === 'image' || panel === 'settings')"
         ref="panelHost"
         tabindex="-1"
         class="review-panel"
@@ -535,18 +736,24 @@ async function removeModel() {
             <X :size="17" />
           </BaseButton>
         </div>
-        <ModelSettings
-          v-if="panel === 'settings'"
-          :caption="captionState"
-          :writing="assistantState"
-          :writing-files="writingFiles"
-          @download-caption="downloadCaption"
-          @cancel-caption="captions.cancel()"
-          @remove-caption="removeCaption"
-          @enable-writing="enable"
-          @cancel-writing="session.cancel()"
-          @remove-writing="removeModel"
-        />
+        <template v-if="panel === 'settings'">
+          <WritingSettings v-model="writingPreferences" />
+          <BaseButton aria-label="Keyboard shortcuts" @click="shortcutsOpen = true"
+            >Keyboard shortcuts</BaseButton
+          >
+          <h3 class="settings-model-heading">Local models</h3>
+          <ModelSettings
+            :caption="captionState"
+            :writing="assistantState"
+            :writing-files="writingFiles"
+            @download-caption="downloadCaption"
+            @cancel-caption="captions.cancel()"
+            @remove-caption="removeCaption"
+            @enable-writing="enable"
+            @cancel-writing="session.cancel()"
+            @remove-writing="removeModel"
+          />
+        </template>
         <template v-else-if="panel === 'image' && imageTarget">
           <section class="image-description" @keydown.esc.stop="closeImage">
             <img :src="imageTarget.url" :alt="imageTarget.alt" class="alt-preview" />
@@ -575,7 +782,7 @@ async function removeModel() {
         </template>
       </aside>
       <AssistancePanel
-        v-if="panel === 'review' || panel === 'assist'"
+        v-if="!focusMode && (panel === 'review' || panel === 'assist')"
         :panel="panel"
         :issues="issues"
         :assistant-state="assistantState"
@@ -601,7 +808,37 @@ async function removeModel() {
         <X :size="14" />
       </BaseButton>
     </div>
-    <footer class="statusbar">
+    <QuickNavigation
+      v-model:open="navigationOpen"
+      :documents="state.documents"
+      :text="active?.text ?? ''"
+      @document="activateDocument"
+      @heading="navigateHeading"
+      @closed="focusEditor"
+    />
+    <BaseDialog v-model:open="shortcutsOpen" title="Keyboard shortcuts" @closed="focusEditor">
+      <dl class="shortcut-list">
+        <template v-for="shortcutItem in writingShortcuts" :key="shortcutItem.action"
+          ><dt>{{ shortcutItem.action }}</dt>
+          <dd>{{ shortcutItem.keys }}</dd></template
+        >
+      </dl>
+    </BaseDialog>
+    <BaseDialog v-model:open="exportOpen" title="Export document" @closed="focusEditor">
+      <div class="export-actions">
+        <BaseButton :disabled="exporting" variant="outline" @click="exportDocument('html')"
+          >Download HTML</BaseButton
+        >
+        <BaseButton :disabled="exporting" variant="outline" @click="exportDocument('docx')"
+          >Download Word document</BaseButton
+        >
+        <BaseButton :disabled="exporting" variant="outline" @click="exportDocument('print')"
+          >Print / Save PDF</BaseButton
+        >
+      </div>
+      <p class="panel-description">PDF uses your browser's print dialog. Choose Save as PDF.</p>
+    </BaseDialog>
+    <footer v-if="!focusMode" class="statusbar">
       <div>
         <BaseButton
           aria-label="Vim mode"

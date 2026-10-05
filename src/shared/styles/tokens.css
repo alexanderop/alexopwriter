@@ -7,6 +7,7 @@
   --error-ink: #803d28;
   --shadow-panel: #0000000b;
   --shadow-notice: #0002;
+  --shadow-overlay: #0008;
   --accent-foreground: #fff;
   --accent-hover: color-mix(in srgb, var(--accent) 90%, var(--ink));
   --font-system: -apple-system, BlinkMacSystemFont, sans-serif;

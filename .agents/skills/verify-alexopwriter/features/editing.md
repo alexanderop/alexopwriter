@@ -7,7 +7,9 @@ Users can edit by keyboard, undo and redo, apply a writing correction, change wr
 - `history`: Imported content and separate documents retain independent undo and redo behavior.
 - `selection`: Keyboard replacement changes only selected text and updates the word count.
 - `review`: Applying a deterministic writing correction participates in history and recovery.
-- `preferences`: Vim and dark-mode choices persist; focus mode and sidebar toggles preserve editable text.
+- `preferences`: Typography, passage focus, spelling language, Vim, and dark-mode choices persist. New writers start with Vim disabled.
+- `search`: Find and replace changes all matches in one undoable edit.
+- `navigation`: Quick navigation selects headings without changing surrounding text.
 - `optional-help`: Opening local writing help and Settings leaves writing usable without downloading a model.
 
 ## How to get to it (user POV)
@@ -22,6 +24,8 @@ Preconditions: `pnpm writer doctor` succeeds. Each scenario starts with an isola
 - **Apply a correction:** The same command changes `utilize` to `use`, checks undo and redo, reloads, and checks the recovered correction.
 - **Change controls:** The same command verifies Vim insertion and undo, persisted Vim and dark-mode choices, and content preservation while toggling focus mode and the sidebar.
 - **Inspect help:** The same command opens optional help and Settings, continues typing, checks saved text, and observes that model download requests are absent.
+
+The writing-experience scenarios also verify persisted typography and spelling settings, replace-all undo, and keyboard heading navigation. Browser Mode covers typewriter geometry, cached editor preferences, and dialog focus.
 
 ## Gotchas
 

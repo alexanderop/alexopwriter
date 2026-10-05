@@ -244,6 +244,115 @@ export class WriterPage {
     return { name, bytes }
   }
 
+  async findAndReplace(search: string, replacement: string) {
+    await this.page.getByRole('button', { name: 'Find and replace', exact: true }).click()
+    await this.page.getByRole('textbox', { name: 'Find', exact: true }).fill(search)
+    await this.page.getByRole('textbox', { name: 'Find', exact: true }).press('Tab')
+    await this.page.getByRole('textbox', { name: 'Replace', exact: true }).fill(replacement)
+    await this.page.getByRole('textbox', { name: 'Replace', exact: true }).press('Tab')
+    await this.page.getByRole('button', { name: 'replace all', exact: true }).click()
+    await this.page.getByRole('textbox', { name: 'Find', exact: true }).press('Escape')
+    await this.editor.focus()
+  }
+
+  async customizeWriting() {
+    await this.page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await this.page.getByRole('combobox', { name: 'Typeface', exact: true }).selectOption('serif')
+    await this.page.getByRole('combobox', { name: 'Text size', exact: true }).selectOption('22')
+    await this.page.getByRole('combobox', { name: 'Line width', exact: true }).selectOption('wide')
+    await this.page
+      .getByRole('combobox', { name: 'Focus passage', exact: true })
+      .selectOption('sentence')
+    await this.page
+      .getByRole('combobox', { name: 'Spelling language', exact: true })
+      .selectOption('de')
+    await this.page.getByRole('button', { name: 'Close panel', exact: true }).click()
+  }
+
+  async expectWritingPreferences() {
+    await expect(this.editor).toHaveAttribute('spellcheck', 'true')
+    await expect(this.editor).toHaveAttribute('lang', 'de')
+    await this.page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await expect(this.page.getByRole('combobox', { name: 'Typeface', exact: true })).toHaveValue(
+      'serif',
+    )
+    await expect(this.page.getByRole('combobox', { name: 'Text size', exact: true })).toHaveValue(
+      '22',
+    )
+    await expect(this.page.getByRole('combobox', { name: 'Line width', exact: true })).toHaveValue(
+      'wide',
+    )
+    await expect(
+      this.page.getByRole('combobox', { name: 'Focus passage', exact: true }),
+    ).toHaveValue('sentence')
+    await this.page.getByRole('button', { name: 'Close panel', exact: true }).click()
+  }
+
+  async organizeInFolder(folder: string) {
+    await this.page.getByRole('button', { name: 'Add favorite', exact: true }).click()
+    await this.page.getByRole('combobox', { name: 'Document folder', exact: true }).fill(folder)
+    await this.page.getByRole('combobox', { name: 'Document folder', exact: true }).press('Tab')
+    await this.expectSaved()
+  }
+
+  async trashAndRestore() {
+    await this.page.getByRole('button', { name: 'Move to Trash', exact: true }).click()
+    await this.page.getByLabel('Document collection', { exact: true }).selectOption('trash')
+    await this.page.getByRole('button', { name: 'Restore', exact: true }).click()
+    await this.page.getByLabel('Document collection', { exact: true }).selectOption('all')
+  }
+
+  async expectOrganized(folder: string) {
+    await expect(
+      this.page.getByRole('button', { name: 'Remove favorite', exact: true }),
+    ).toBeVisible()
+    await expect(
+      this.page.getByRole('combobox', { name: 'Document folder', exact: true }),
+    ).toHaveValue(folder)
+    await this.page.getByLabel('Document collection', { exact: true }).selectOption('favorites')
+  }
+
+  async previewAndReturn() {
+    await this.page.getByRole('button', { name: 'Toggle preview', exact: true }).click()
+    const preview = this.page.getByRole('region', { name: 'Document preview', exact: true })
+    await expect(preview.getByRole('heading', { name: 'An essay', exact: true })).toBeVisible()
+    await expect(preview).toContainText('A bold thought.')
+    await this.page.getByRole('button', { name: 'Read only', exact: true }).click()
+    await expect(this.editor).toBeHidden()
+    await this.page.getByRole('button', { name: 'Close preview', exact: true }).click()
+    await expect(this.editor).toBeVisible()
+  }
+
+  async downloadFormatted(format: 'HTML' | 'Word document') {
+    await this.page.getByRole('button', { name: 'Export document', exact: true }).click()
+    const pending = this.page.waitForEvent('download')
+    await this.page.getByRole('button', { name: `Download ${format}`, exact: true }).click()
+    const download = await pending
+    const bytes = await readFile(await download.path())
+    await this.testInfo.attach(download.suggestedFilename(), { body: bytes })
+    if (format === 'HTML') {
+      expect(download.suggestedFilename()).toMatch(/\.html$/)
+      expect(bytes.toString('utf8')).toContain('<strong>bold</strong>')
+      expect(bytes.toString('utf8')).toContain('An essay')
+    } else {
+      expect(download.suggestedFilename()).toMatch(/\.docx$/)
+      expect(bytes.subarray(0, 2).toString()).toBe('PK')
+    }
+  }
+
+  async navigateToHeading() {
+    await this.editor.press('ControlOrMeta+k')
+    await expect(this.page.getByRole('dialog', { name: 'Quick navigation' })).toBeVisible()
+    await this.page.getByRole('button', { name: 'Headings', exact: true }).click()
+    await this.page
+      .getByRole('textbox', { name: 'Search documents or headings' })
+      .fill('Second section')
+    await this.page.getByRole('textbox', { name: 'Search documents or headings' }).press('Enter')
+    await expect(this.page.getByRole('dialog')).toHaveCount(0)
+    await expect(this.editor).toBeFocused()
+    await this.editor.pressSequentially('Replacement heading')
+  }
+
   async waitForOfflineAvailability() {
     await this.page.evaluate(async () => {
       await navigator.serviceWorker.ready

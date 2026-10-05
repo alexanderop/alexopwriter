@@ -22,6 +22,8 @@ Preconditions: `pnpm writer doctor` succeeds; no existing personal drafts are ne
 - **Switch, clear, and rename:** The same command verifies independent documents through repeated reloads, an empty recovered download, and exact renamed multiline text and downloaded bytes.
 - **Divergent tabs:** The same command edits a shared draft in two tabs and checks both recovered branches in a fresh tab. Inspect those actions in the retained trace.
 
+The library journey verifies a favorite and folder assignment through Trash, restore, and reload. Browser Mode also covers restoring the only document and removing the last document from a selected folder.
+
 ## Gotchas
 
 - Browser recovery is separate from writing back to a disk file. These results prove recovered drafts, not original-file saving.

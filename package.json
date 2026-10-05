@@ -46,7 +46,6 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/markdown-it": "^14.2.0",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/browser-playwright": "5.0.0",

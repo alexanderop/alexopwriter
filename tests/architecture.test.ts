@@ -84,3 +84,21 @@ it.each([
 ])('allows owned dependencies in %s', (file, source) => {
   expect(check(source, file)).toEqual([])
 })
+
+it('permits only the browser-free Markdown parser inside the reading domain', () => {
+  expect(
+    check("import MarkdownIt from 'markdown-it'", 'features/reading/domain/markdown.ts'),
+  ).toEqual([])
+  expect(
+    check(
+      "import type Token from 'markdown-it/lib/token.mjs'",
+      'features/reading/domain/markdown.ts',
+    ),
+  ).toEqual([])
+  expect(
+    check("import { ref } from 'vue'", 'features/reading/domain/markdown.ts').length,
+  ).toBeGreaterThan(0)
+  expect(
+    check("import MarkdownIt from 'markdown-it'", 'features/documents/domain/document.ts').length,
+  ).toBeGreaterThan(0)
+})

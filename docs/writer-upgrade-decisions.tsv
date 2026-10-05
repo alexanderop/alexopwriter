@@ -1,2 +1,9 @@
 ts	phase	decision	why	evidence	result
 2026-10-05T05:06:01Z	frame	Implement priorities 1 through 8 as browser-owned features	User authorized full implementation and delivery to main	docs/writer-upgrade-plan.md	open
+2026-10-05T05:09:53Z	design	Keep recovery metadata with documents and add a reading feature	Independent designs and judge favored existing ownership over a second metadata store	verification-artifacts/writer-upgrade/writer-upgrade-design-verdict.md	VERIFIED
+2026-10-05T05:22:34Z	implementation	Integrated editor library and reading units after focused checks	Feature owners preserve undo and recovery contracts	verification-artifacts/writer-upgrade/integration-e2e.log	25 Chromium journeys passed
+2026-10-05T05:22:34Z	review	Fixed stale folder filter WebP Word export and reading-view focus return	Independent reviewers identified concrete user-visible defects	verification-artifacts/writer-upgrade/writer-reading-shell-review.md	Regressions added
+2026-10-05T05:23:15Z	verification	Preserve exact legacy storage rows and apply metadata defaults in workspace	Full checks caught four storage contract regressions caused by decoder defaults	tests/recovery.browser.test.ts	Corrected; full verification rerunning
+2026-10-05T05:24:01Z	verification	Full Pages-path verification passed	Confirm formatting architecture types logic browser tests build and production journeys together	verification-artifacts/writer-upgrade/verify.log	195 tests and 25 Chromium journeys passed
+2026-10-05T05:25:45Z	review	Final independent source and evidence review passed	Reviewer confirmed all reported defects have regression coverage	verification-artifacts/writer-upgrade/writer-final-review.md	PASS
+2026-10-05T05:25:45Z	verification	CLI verification checks passed with four export scenarios	New offline formatted-output journey extends the existing import-export group	verification-artifacts/writer-upgrade/writer-cli.log	3 CLI tests passed

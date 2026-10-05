@@ -60,3 +60,11 @@ The library follows the local-source approach of [shadcn-vue](https://www.shadcn
 `writer-ui/shared-controls` rejects raw buttons, visible native fields, selects, and dialogs in app/feature Vue templates. The hidden file importer is the explicit native exception. The rule also rejects literal colors and direct control style utilities in templates. It is a targeted convention check, not a full CSS cascade proof. Browser accessibility tests and visual review cover rendered states.
 
 Run `pnpm dev` and open `/design-system.html` for the editable component gallery. It shows variants, sizes, disabled controls, fields, tokens, and a theme toggle. Keyboard focus is visible with Tab. This development entry is not included in the production build.
+
+## Reading and library organization
+
+The reading feature converts Markdown into safe preview HTML and heading positions. Its single browser-free parser module may import `markdown-it`; architecture checks permit that dependency only in `features/reading/domain/markdown.ts`. Raw HTML remains disabled, and image rendering accepts embedded raster data rather than fetching remote images. Formatted output uses the same parse policy. The browser export adapter handles HTML downloads, print/PDF, and lazy DOCX generation.
+
+Document organization belongs to existing recovery branches. Folder, favorite, and Trash changes increment the recovery revision without changing the disk content revision. Trash retains the source. Library folders are labels for browser drafts, not disk directories.
+
+Writing preferences belong to the editor feature. The app stores validated preferences and controls quiet mode and preview layout. CodeMirror remains mounted during preview and reapplies preference compartments when restoring cached document states. Shared UI now includes `BaseSelect` and a Reka-backed `BaseDialog`.

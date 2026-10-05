@@ -152,7 +152,7 @@
     overflow-y: auto;
   }
   .page {
-    max-width: 42rem;
+    max-width: var(--writing-width, 42rem);
     margin: 0 auto;
     padding: 0 1.5rem;
   }
@@ -561,5 +561,97 @@
     max-height: 180px;
     object-fit: contain;
     margin: 1rem 0;
+  }
+}
+
+@layer base {
+  .document-workspace {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .document-panes {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .reading-tools {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-system);
+  }
+  .preview-pane {
+    flex: 1;
+    min-width: 0;
+    padding: 3rem 2rem;
+    overflow-y: auto;
+    border-left: 1px solid var(--line);
+  }
+  .view-read .preview-pane {
+    border-left: 0;
+  }
+  .focus-exit {
+    position: fixed;
+    top: 0.75rem;
+    right: 1rem;
+    z-index: 10;
+    font-family: var(--font-system);
+  }
+  .focused .writing-area {
+    padding-top: 5rem;
+  }
+  .shortcut-list {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+  .shortcut-list dd {
+    margin: 0;
+    color: var(--muted);
+  }
+  .export-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .settings-model-heading {
+    font-size: 0.9rem;
+    margin: 1.5rem 0 1rem;
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+  }
+  @media (max-width: 760px) {
+    .view-split .document-panes {
+      flex-direction: column;
+    }
+    .view-split .writing-area,
+    .view-split .preview-pane {
+      min-height: 0;
+      flex: 1;
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+    .view-split .preview-pane {
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+    .shortcut-list {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+    .shortcut-list dd {
+      margin-bottom: 0.75rem;
+    }
+    .reading-tools {
+      gap: 0.25rem;
+      padding: 0.25rem;
+    }
   }
 }

@@ -23,7 +23,7 @@ Choose `pnpm writer verify` for existing automated coverage. Choose `pnpm browse
 
 `pnpm writer list` lists the five mapped groups. `pnpm writer verify all` runs all groups. For machine-readable stdout use `pnpm --silent writer verify recovery --json`; progress goes to stderr and the final JSON names the evidence directory.
 
-The CLI selects tagged [writer scenarios](../../../tests/e2e/writer.feature) and [image scenarios](../../../tests/e2e/images.feature). Both ordinary E2E tests and verification use the same [WriterPage](../../../tests/e2e/pages/WriterPage.ts) and [ImagePage](../../../tests/e2e/pages/ImagePage.ts). Keep maintained automated scenarios and selectors in those files. Exploratory CLI actions may use fresh snapshots; do not turn them into a second maintained test suite. Use visible controls and browser events; do not seed Vue, CodeMirror, or IndexedDB internals.
+The CLI selects tagged [writer scenarios](../../../tests/e2e/writer.feature) , [image scenarios](../../../tests/e2e/images.feature), and [writing experience scenarios](../../../tests/e2e/writing-experience.feature). Both ordinary E2E tests and verification use the same [WriterPage](../../../tests/e2e/pages/WriterPage.ts) and [ImagePage](../../../tests/e2e/pages/ImagePage.ts). Keep maintained automated scenarios and selectors in those files. Exploratory CLI actions may use fresh snapshots; do not turn them into a second maintained test suite. Use visible controls and browser events; do not seed Vue, CodeMirror, or IndexedDB internals.
 
 ## Evidence
 
