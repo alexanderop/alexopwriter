@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch, useTemplateRef } from 'vue'
 import { BaseButton } from '../../../shared/ui/button'
 import { BaseInput } from '../../../shared/ui/input'
 import { BaseSelect } from '../../../shared/ui/select'
@@ -16,6 +16,14 @@ const emit = defineEmits<{
   trash: [id: string]
   restore: [id: string]
 }>()
+const searchInput = useTemplateRef<InstanceType<typeof BaseInput>>('searchInput')
+defineExpose({
+  show: (value: string) => {
+    section.value = value
+    query.value = ''
+    void nextTick(() => searchInput.value?.focus())
+  },
+})
 const query = ref('')
 const section = ref('all')
 const sort = ref('updated')
@@ -55,6 +63,7 @@ function assignFolder(id: string, event: Event) {
       /></BaseButton>
     </div>
     <BaseInput
+      ref="searchInput"
       v-model="query"
       type="search"
       aria-label="Search documents"

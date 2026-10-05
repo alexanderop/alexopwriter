@@ -73,3 +73,24 @@ Feature: A focused browser writing experience
     Then my document contains "Keep this paragraph." somewhere
     And my document contains "Replacement heading" somewhere
     And my document contains "Keep the ending." somewhere
+
+  @editing
+  Scenario: A developer uses the command palette and preview entirely from the keyboard
+    Given I have opened the browser writer
+    When I rename the draft and toggle preview using shortcuts
+    Then my document contains "Written from the keyboard." somewhere
+
+  @editing
+  Scenario: Question mark opens the shortcut reference outside text fields
+    Given I have opened the browser writer
+    When I request shortcut help with question mark outside the editor
+    Then the shortcut reference shows app and editing keys
+    When I close the shortcut reference with Escape
+    Then I can continue writing a question mark in my document
+
+  @editing
+  Scenario: Question mark in the command palette opens the shortcut reference
+    Given I have opened the browser writer
+    When I run the question mark command from the palette
+    Then the shortcut reference shows app and editing keys
+    And only the shortcut reference dialog is open

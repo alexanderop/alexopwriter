@@ -5,7 +5,11 @@ import { BaseInput } from '../shared/ui/input'
 import { BaseButton } from '../shared/ui/button'
 import type { DocumentSnapshot } from '../features/documents'
 import { renderDocument } from '../features/reading'
-const props = defineProps<{ documents: readonly DocumentSnapshot[]; text: string }>()
+const props = defineProps<{
+  documents: readonly DocumentSnapshot[]
+  text: string
+  mode?: 'documents' | 'headings'
+}>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{
   document: [id: string]
@@ -21,7 +25,10 @@ function opened(event: Event) {
 const tab = ref<'documents' | 'headings'>('documents')
 const resultsHost = useTemplateRef<HTMLDivElement>('results')
 watch(open, (value) => {
-  if (value) query.value = ''
+  if (value) {
+    query.value = ''
+    tab.value = props.mode ?? 'documents'
+  }
 })
 const entries = computed(() => {
   if (!open.value) return []

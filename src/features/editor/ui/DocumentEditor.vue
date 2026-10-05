@@ -2,10 +2,17 @@
 import { computed, onMounted, onBeforeUnmount, useTemplateRef, watch } from 'vue'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, keymap, placeholder, drawSelection } from '@codemirror/view'
-import { defaultKeymap, history, historyKeymap, isolateHistory } from '@codemirror/commands'
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  isolateHistory,
+  undo,
+  redo,
+} from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
-import { search, searchKeymap, openSearchPanel } from '@codemirror/search'
+import { search, searchKeymap, openSearchPanel, gotoLine } from '@codemirror/search'
 import {
   defaultWritingPreferences,
   writingStyle,
@@ -297,6 +304,21 @@ function hasPendingImages(): boolean {
   )
 }
 defineExpose({
+  goToLine: () => {
+    if (view) gotoLine(view)
+  },
+  undo: () => {
+    if (view) {
+      undo(view)
+      view.focus()
+    }
+  },
+  redo: () => {
+    if (view) {
+      redo(view)
+      view.focus()
+    }
+  },
   openSearch: () => {
     if (view) openSearchPanel(view)
   },

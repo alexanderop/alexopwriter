@@ -341,7 +341,7 @@ export class WriterPage {
   }
 
   async navigateToHeading() {
-    await this.editor.press('ControlOrMeta+k')
+    await this.editor.press('ControlOrMeta+p')
     await expect(this.page.getByRole('dialog', { name: 'Quick navigation' })).toBeVisible()
     await this.page.getByRole('button', { name: 'Headings', exact: true }).click()
     await this.page

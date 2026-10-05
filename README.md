@@ -145,3 +145,29 @@ Focus mode hides surrounding controls. Press Escape or choose Exit focus to retu
 The library searches names and text, sorts documents, and filters folders and favorites. Moving a draft to Trash preserves its text and allows restoration. Folder names organize browser drafts and do not create disk directories. These changes do not overwrite original files.
 
 Preview supports side-by-side and reading views while retaining editor history. Export offers standalone HTML, a Word document, or the browser print dialog for saving PDF. Output is generated on the device. Preview and HTML output render embedded raster images; remote images remain labelled placeholders. DOCX supports common Markdown blocks and embedded raster images. WebP images convert to PNG on the device. Remote images retain their descriptions.
+
+## Keyboard workflow
+
+Open the command palette with **Cmd/Ctrl+Shift+P** or **F1**. Search any app action, navigate with Up/Down, and press Enter. Unavailable commands stay visible but cannot run. Document operations, review fixes, image alt text, exports, model management, and every writing preference are available here. Panels and native file/print dialogs use their standard keyboard controls.
+
+| Action                      | Shortcut                                              |
+| --------------------------- | ----------------------------------------------------- |
+| Quick open document         | Cmd/Ctrl+P                                            |
+| Go to heading               | Cmd/Ctrl+Shift+O                                      |
+| Go to line                  | Cmd/Ctrl+G                                            |
+| New / open / save           | Cmd/Ctrl+N / O / S                                    |
+| Download Markdown copy      | Cmd/Ctrl+Shift+S                                      |
+| Rename document             | F2                                                    |
+| Find and replace            | Cmd/Ctrl+F                                            |
+| Toggle sidebar              | Cmd/Ctrl+B                                            |
+| Focus document explorer     | Cmd/Ctrl+Shift+E                                      |
+| Focus editor                | Cmd/Ctrl+1                                            |
+| Toggle Markdown preview     | Cmd/Ctrl+Shift+V                                      |
+| Writing checks              | Cmd/Ctrl+Shift+M                                      |
+| Settings                    | Cmd/Ctrl+,                                            |
+| Zen mode                    | Cmd/Ctrl+K, then Z                                    |
+| Keyboard shortcut reference | ? outside text fields, or Cmd/Ctrl+K, then Cmd/Ctrl+S |
+
+Search **?** in the command palette and press Enter to open the shortcut reference. The modal lists app bindings, common editing keys, and dialog navigation. Typing **?** in the editor or a text field keeps the character; the shortcut chord also works while writing.
+
+Two-key sequences wait 1.5 seconds and can be cancelled with Escape. Escape closes a dialog or panel, or exits Zen mode. App shortcuts pause inside dialogs so search and form controls keep their keyboard behavior. Undo/redo and text selection remain owned by CodeMirror, including when using Vim. Browser/OS-reserved shortcuts can vary; the visible Commands button and F1 provide alternative entry points.

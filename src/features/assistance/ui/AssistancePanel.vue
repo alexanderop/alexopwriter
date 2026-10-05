@@ -23,6 +23,7 @@ const emit = defineEmits<{
 <template>
   <aside
     class="review-panel"
+    tabindex="-1"
     @keydown.esc.stop="emit('close')"
     :aria-label="panel === 'review' ? 'Writing review' : 'Local writing help'"
   >
