@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, useTemplateRef, watch } from 'vue'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, keymap, placeholder, drawSelection } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, isolateHistory } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
+import { search, searchKeymap, openSearchPanel } from '@codemirror/search'
+import {
+  defaultWritingPreferences,
+  writingStyle,
+  type WritingPreferences,
+} from '../domain/preferences'
+import { passageFocus, typewriterScrolling } from '../writingExtensions'
 import { Vim, getCM, vim } from '@replit/codemirror-vim'
 import {
   clipboardImages,
@@ -31,6 +38,8 @@ const props = defineProps<{
   text: string
   revision: number
   vimEnabled: boolean
+  preferences?: WritingPreferences
+  focusEnabled?: boolean
   encodeImages?: (files: readonly File[]) => Promise<string>
 }>()
 const emit = defineEmits<{
@@ -42,6 +51,20 @@ const emit = defineEmits<{
 }>()
 const host = useTemplateRef<HTMLDivElement>('host')
 const vimConfig = new Compartment()
+const writingConfig = new Compartment()
+const preferences = computed(() => props.preferences ?? defaultWritingPreferences)
+function writingExtensions() {
+  const settings = preferences.value
+  return [
+    EditorView.contentAttributes.of({
+      'aria-label': 'Document editor',
+      spellcheck: String(settings.spellcheck),
+      lang: settings.language === 'auto' ? navigator.language : settings.language,
+    }),
+    passageFocus(props.focusEnabled ? settings.focus : 'off'),
+    settings.typewriter ? typewriterScrolling : [],
+  ]
+}
 const states = new Map<string, EditorState>()
 let view: EditorView | null = null
 let currentId = props.documentId
@@ -75,11 +98,9 @@ function makeState(text: string) {
       EditorView.lineWrapping,
       placeholder('Start writing. This space is yours.'),
       vimConfig.of(props.vimEnabled ? vim() : []),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
-      EditorView.contentAttributes.of({
-        'aria-label': 'Document editor',
-        spellcheck: 'false',
-      }),
+      search({ top: true }),
+      keymap.of([...searchKeymap, ...defaultKeymap, ...historyKeymap]),
+      writingConfig.of(writingExtensions()),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           revision += 1
@@ -111,7 +132,10 @@ watch(
     revision = props.revision
     view.setState(states.get(id) ?? makeState(props.text))
     view.dispatch({
-      effects: vimConfig.reconfigure(props.vimEnabled ? vim() : []),
+      effects: [
+        vimConfig.reconfigure(props.vimEnabled ? vim() : []),
+        writingConfig.reconfigure(writingExtensions()),
+      ],
     })
     reportMode()
     emit('selection', !view.state.selection.main.empty)
@@ -129,6 +153,13 @@ watch(
     view?.dispatch({ effects: vimConfig.reconfigure(enabled ? vim() : []) })
     reportMode()
   },
+)
+watch(
+  [preferences, () => props.focusEnabled],
+  () => {
+    view?.dispatch({ effects: writingConfig.reconfigure(writingExtensions()) })
+  },
+  { deep: true },
 )
 onBeforeUnmount(() => {
   view?.destroy()
@@ -266,6 +297,9 @@ function hasPendingImages(): boolean {
   )
 }
 defineExpose({
+  openSearch: () => {
+    if (view) openSearchPanel(view)
+  },
   captureImage,
   releaseImage,
   applyImageAlt,
@@ -277,4 +311,40 @@ defineExpose({
 })
 </script>
 
-<template><div ref="host" class="document-editor" /></template>
+<template>
+  <div
+    ref="host"
+    class="document-editor"
+    :class="{ 'typewriter-editor': preferences.typewriter }"
+    :style="writingStyle(preferences)"
+  />
+</template>
+
+<style scoped>
+.document-editor {
+  font-family: var(--writing-font);
+  font-size: var(--writing-size);
+  max-width: var(--writing-width);
+  margin-inline: auto;
+}
+.typewriter-editor {
+  padding-block: 40vh;
+}
+.document-editor :deep(.writing-dimmed) {
+  opacity: 0.5;
+}
+.document-editor :deep(.cm-search) {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper);
+  padding: 12px;
+}
+.document-editor :deep(.cm-search input),
+.document-editor :deep(.cm-search button) {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+</style>
