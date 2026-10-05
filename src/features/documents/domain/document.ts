@@ -5,6 +5,9 @@ export type RecoveryRecord = {
   readonly text: string
   readonly revision: number
   readonly updatedAt: number
+  readonly folder?: string
+  readonly favorite?: boolean
+  readonly trashedAt?: number | null
   readonly parent?: { readonly actor: string; readonly revision: number } | undefined
 }
 export type RecoveryStatus =
@@ -20,6 +23,10 @@ export type DiskStatus =
   | { readonly kind: 'failed' }
   | { readonly kind: 'download-required' }
 export type DocumentSnapshot = {
+  readonly folder: string
+  readonly favorite: boolean
+  readonly trashedAt: number | null
+  readonly updatedAt: number
   readonly id: string
   readonly name: string
   readonly text: string

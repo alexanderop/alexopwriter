@@ -17,6 +17,11 @@ type DocumentState = {
   name: string
   text: string
   revision: number
+  contentRevision: number
+  folder: string
+  favorite: boolean
+  trashedAt: number | null
+  updatedAt: number
   recoveredRevision: number
   recoveryStatus: RecoveryStatus
   diskStatus: DiskStatus
@@ -33,6 +38,10 @@ export type Workspace = {
   activate(id: string): void
   edited(id: string, text: string): void
   rename(id: string, name: string): void
+  setFavorite(id: string, favorite: boolean): void
+  moveToFolder(id: string, folder: string): void
+  trash(id: string): void
+  restoreDocument(id: string): void
   save(id: string): Promise<void>
   download(id: string): void
   flush(): Promise<void>
@@ -63,6 +72,10 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
         name: doc.name,
         text: doc.text,
         revision: doc.revision,
+        folder: doc.folder,
+        favorite: doc.favorite,
+        trashedAt: doc.trashedAt,
+        updatedAt: doc.updatedAt,
         recoveryStatus: doc.recoveryStatus,
         diskStatus: doc.diskStatus,
         hasDiskBinding: doc.binding !== null,
@@ -91,6 +104,11 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       name,
       text,
       revision: 0,
+      contentRevision: 0,
+      folder: '',
+      favorite: false,
+      trashedAt: null,
+      updatedAt: now(),
       recoveredRevision: -1,
       recoveryStatus: { kind: 'pending' },
       diskStatus: disk ? { kind: 'saved', revision: 0 } : { kind: 'unbound' },
@@ -113,7 +131,10 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
         name: doc.name,
         text: doc.text,
         revision,
-        updatedAt: now(),
+        updatedAt: doc.updatedAt,
+        folder: doc.folder,
+        favorite: doc.favorite,
+        trashedAt: doc.trashedAt,
         ...(doc.parent ? { parent: doc.parent } : {}),
       }
 
@@ -141,10 +162,14 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       flush().catch(report)
     })
   }
-  function changed(doc: DocumentState) {
+  function changed(doc: DocumentState, content = true) {
     doc.revision += 1
     doc.recoveryStatus = { kind: 'pending' }
-    doc.diskStatus = doc.binding ? { kind: 'dirty' } : { kind: 'unbound' }
+    if (content) {
+      doc.contentRevision += 1
+      doc.updatedAt = now()
+      doc.diskStatus = doc.binding ? { kind: 'dirty' } : { kind: 'unbound' }
+    }
     error = null
     schedule()
     emit()
@@ -164,7 +189,14 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       for (const record of [...records].sort((a, b) => b.updatedAt - a.updatedAt)) {
         if (superseded.has(JSON.stringify([record.id, record.actor, record.revision]))) continue
 
-        const identity = JSON.stringify([record.id, record.name, record.text])
+        const identity = JSON.stringify([
+          record.id,
+          record.name,
+          record.text,
+          record.folder ?? '',
+          record.favorite ?? false,
+          record.trashedAt ?? null,
+        ])
         if (seen.has(identity)) continue
         seen.add(identity)
         const competing = [...documents.values()].some((doc) => doc.id === record.id)
@@ -173,12 +205,16 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
         const doc = append(name, record.text, null, id)
         doc.recoveryId = record.id
         doc.parent = { actor: record.actor, revision: record.revision }
+        doc.folder = record.folder ?? ''
+        doc.favorite = record.favorite ?? false
+        doc.trashedAt = record.trashedAt ?? null
+        doc.updatedAt = record.updatedAt
         doc.revision = record.revision
         doc.recoveredRevision = record.revision
         doc.recoveryStatus = { kind: 'saved', revision: record.revision }
       }
       if (originalActive !== null) activeId = originalActive
-      else activeId = documents.keys().next().value ?? null
+      else activeId = [...documents.values()].find((doc) => doc.trashedAt === null)?.id ?? null
       emit()
     } catch (cause) {
       report(cause)
@@ -186,7 +222,7 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
   }
   async function write(doc: DocumentState, target: DiskBinding, baseline: string) {
     const text = doc.text
-    const revision = doc.revision
+    const revision = doc.contentRevision
     doc.diskStatus = { kind: 'saving', revision }
     emit()
     try {
@@ -198,7 +234,8 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       await target.write(text)
       doc.binding = target
       doc.baseline = text
-      doc.diskStatus = doc.revision === revision ? { kind: 'saved', revision } : { kind: 'dirty' }
+      doc.diskStatus =
+        doc.contentRevision === revision ? { kind: 'saved', revision } : { kind: 'dirty' }
     } catch (cause) {
       doc.diskStatus = { kind: 'failed' }
       error = cause instanceof Error ? cause.message : 'The operation could not be completed.'
@@ -279,7 +316,7 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
       }
     },
     activate(id) {
-      if (documents.has(id)) {
+      if (documents.get(id)?.trashedAt === null) {
         activeId = id
         emit()
       }
@@ -297,6 +334,34 @@ export function createWorkspace(options: WorkspaceDependencies): Workspace {
         doc.name = name.trim()
         changed(doc)
       }
+    },
+    setFavorite(id, favorite) {
+      const doc = documents.get(id)
+      if (!doc || disposed || doc.favorite === favorite) return
+      doc.favorite = favorite
+      changed(doc, false)
+    },
+    moveToFolder(id, folder) {
+      const doc = documents.get(id)
+      const name = folder.trim()
+      if (!doc || disposed || doc.folder === name) return
+      doc.folder = name
+      changed(doc, false)
+    },
+    trash(id) {
+      const doc = documents.get(id)
+      if (!doc || disposed || doc.trashedAt !== null) return
+      doc.trashedAt = now()
+      if (activeId === id)
+        activeId = [...documents.values()].find((item) => item.trashedAt === null)?.id ?? null
+      changed(doc, false)
+    },
+    restoreDocument(id) {
+      const doc = documents.get(id)
+      if (!doc || disposed || doc.trashedAt === null) return
+      doc.trashedAt = null
+      activeId ??= id
+      changed(doc, false)
     },
     save,
     download(id) {

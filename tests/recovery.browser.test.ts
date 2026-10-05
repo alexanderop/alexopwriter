@@ -143,3 +143,81 @@ it('retains a parent branch updated beyond the revision its successor superseded
     await deleteDatabase(name)
   }
 })
+it('loads old records with defaults and retains different library states of identical branches', async () => {
+  const name = `alexopwriter-library-${crypto.randomUUID()}`
+  const storage = indexedDbRecovery(name)
+  const workspace = createWorkspace({ recovery: indexedDbRecovery(name), actor: 'library' })
+  const reloaded = createWorkspace({ recovery: indexedDbRecovery(name), actor: 'reload' })
+  try {
+    const legacy = {
+      id: 'same',
+      actor: 'old',
+      name: 'draft.md',
+      text: 'valuable',
+      revision: 0,
+      updatedAt: 1,
+    }
+    await storage.put(legacy)
+    await storage.put({
+      ...legacy,
+      actor: 'other',
+      folder: 'Novel',
+      favorite: true,
+      trashedAt: 2,
+      updatedAt: 2,
+    })
+    expect((await storage.list()).find((record) => record.actor === 'old')).toMatchObject({
+      folder: '',
+      favorite: false,
+      trashedAt: null,
+    })
+    await workspace.initialize()
+    expect(workspace.snapshot().documents).toHaveLength(2)
+    const active = workspace.snapshot().activeId
+    if (!active) throw new Error('Nontrashed branch must remain active')
+    workspace.moveToFolder(active, 'Essays')
+    await workspace.flush()
+    await reloaded.initialize()
+    expect(reloaded.snapshot().documents).toHaveLength(2)
+    expect(reloaded.snapshot().documents.filter((doc) => doc.trashedAt === null)).toHaveLength(1)
+    expect(
+      reloaded.snapshot().documents.find((doc) => doc.id === reloaded.snapshot().activeId),
+    ).toMatchObject({ text: 'valuable', folder: 'Essays' })
+  } finally {
+    await workspace.dispose()
+    await reloaded.dispose()
+    storage.close()
+    await deleteDatabase(name)
+  }
+})
+
+it('keeps a concurrently edited branch outside Trash when another tab trashes its ancestor', async () => {
+  const name = `alexopwriter-trash-branch-${crypto.randomUUID()}`
+  const first = createWorkspace({ recovery: indexedDbRecovery(name), actor: 'first' })
+  const second = createWorkspace({ recovery: indexedDbRecovery(name), actor: 'second' })
+  const reloaded = createWorkspace({ recovery: indexedDbRecovery(name), actor: 'reload' })
+  try {
+    await first.create('draft.md', 'Original')
+    await second.initialize()
+    const firstId = first.snapshot().activeId
+    const secondId = second.snapshot().activeId
+    if (!firstId || !secondId) throw new Error('Expected documents')
+    second.trash(secondId)
+    await second.flush()
+    first.edited(firstId, 'New work in original tab')
+    await first.flush()
+    await reloaded.initialize()
+    expect(reloaded.snapshot().documents).toHaveLength(2)
+    expect(
+      reloaded.snapshot().documents.find((doc) => doc.id === reloaded.snapshot().activeId),
+    ).toMatchObject({ text: 'New work in original tab', trashedAt: null })
+    expect(reloaded.snapshot().documents.find((doc) => doc.trashedAt !== null)?.text).toBe(
+      'Original',
+    )
+  } finally {
+    await first.dispose()
+    await second.dispose()
+    await reloaded.dispose()
+    await deleteDatabase(name)
+  }
+})

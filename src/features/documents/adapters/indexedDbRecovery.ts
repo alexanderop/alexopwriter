@@ -9,6 +9,9 @@ const recordSchema = z.object({
   text: z.string(),
   revision: z.number().int().nonnegative(),
   updatedAt: z.number().finite(),
+  folder: z.string().default(''),
+  favorite: z.boolean().default(false),
+  trashedAt: z.number().finite().nullable().default(null),
   parent: z.object({ actor: z.string(), revision: z.number().int().nonnegative() }).optional(),
 })
 export function indexedDbRecovery(name = 'alexopwriter-web') {

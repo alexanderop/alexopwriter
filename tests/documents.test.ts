@@ -217,3 +217,106 @@ describe('document persistence workflows', () => {
     }
   })
 })
+
+describe('document library', () => {
+  it('keeps repeated library operations idempotent and restores an entirely trashed library', async () => {
+    const recovery = memoryRecovery()
+    const workspace = createWorkspace({ recovery })
+    await workspace.create('draft.md', 'Keep this')
+    const id = activeId(workspace)
+    workspace.setFavorite(id, true)
+    workspace.moveToFolder(id, ' Novel ')
+    workspace.trash(id)
+    const revision = workspace.snapshot().documents[0]?.revision
+    workspace.setFavorite(id, true)
+    workspace.moveToFolder(id, 'Novel')
+    workspace.trash(id)
+    workspace.activate(id)
+    expect(workspace.snapshot().documents[0]?.revision).toBe(revision)
+    expect(workspace.snapshot().activeId).toBeNull()
+    await workspace.flush()
+    const reloaded = createWorkspace({ recovery, actor: 'reload' })
+    await reloaded.initialize()
+    expect(reloaded.snapshot().activeId).toBeNull()
+    expect(reloaded.snapshot().documents[0]).toMatchObject({
+      favorite: true,
+      folder: 'Novel',
+      trashedAt: 100,
+      text: 'Keep this',
+    })
+    reloaded.restoreDocument(id)
+    expect(reloaded.snapshot().activeId).toBe(id)
+    expect(reloaded.snapshot().documents[0]?.trashedAt).toBeNull()
+    await workspace.dispose()
+    await reloaded.dispose()
+  })
+
+  it('does not dirty a bound file when metadata changes during its save', async () => {
+    let bytes = 'original'
+    const started = deferred<void>()
+    const release = deferred<void>()
+    const { workspace } = fixture({
+      async read() {
+        return bytes
+      },
+      async write(text) {
+        started.resolve()
+        await release.promise
+        bytes = text
+      },
+    })
+    await workspace.open()
+    const id = activeId(workspace)
+    workspace.edited(id, 'updated')
+    const saving = workspace.save(id)
+    await started.promise
+    workspace.setFavorite(id, true)
+    workspace.moveToFolder(id, 'Novel')
+    workspace.trash(id)
+    release.resolve()
+    await saving
+    expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('saved')
+    workspace.restoreDocument(id)
+    expect(workspace.snapshot().documents[0]?.diskStatus.kind).toBe('saved')
+    expect(bytes).toBe('updated')
+    await workspace.dispose()
+  })
+
+  it('persists the latest text and metadata after a delayed recovery write', async () => {
+    const memory = memoryRecovery()
+    const started = deferred<void>()
+    const release = deferred<void>()
+    let delayed = false
+    const recovery: RecoveryStore = {
+      ...memory,
+      async put(record) {
+        if (delayed) {
+          started.resolve()
+          await release.promise
+        }
+        await memory.put(record)
+      },
+    }
+    const workspace = createWorkspace({ recovery })
+    await workspace.create('draft.md', 'initial')
+    const id = activeId(workspace)
+    delayed = true
+    workspace.edited(id, 'first')
+    const pending = workspace.flush()
+    await started.promise
+    workspace.edited(id, 'latest')
+    workspace.trash(id)
+    workspace.restoreDocument(id)
+    workspace.setFavorite(id, true)
+    release.resolve()
+    await pending
+    expect(workspace.snapshot().documents[0]?.recoveryStatus.kind).toBe('pending')
+    await workspace.flush()
+    expect((await recovery.list())[0]).toMatchObject({
+      text: 'latest',
+      favorite: true,
+      trashedAt: null,
+    })
+    await workspace.dispose()
+  })
+})
